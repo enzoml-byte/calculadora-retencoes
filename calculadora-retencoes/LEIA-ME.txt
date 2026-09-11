@@ -1,0 +1,38 @@
+============================================================
+ CALCULADORA DE RETENCOES - Guia Rapido (Nao-programadores)
+============================================================
+
+O QUE FAZ:
+ Calcula PIS 0,65% + COFINS 3% + CSLL 1% + IR (1,5% geral
+ ou 1,2% hospitalar/equiparada) + ISS 5% retido ou nao.
+ Simples Nacional: nao retem federais, so ISS se retido.
+ IBS/CBS: so informativo, nao abate. Regime normal = Sim.
+
+COMO USAR (3 PASSOS):
+ 1. Duplo-clique em "Iniciar Calculadora.bat"
+ 2. PASSO 1: escolha a empresa (ou cadastre no PASSO 3)
+ 3. PASSO 2: digite o valor da NF e clique CALCULAR
+
+PRIMEIRA VEZ:
+ 1. Duplo-clique em "Criar Atalho.bat" (cria icone no Desktop)
+ 2. Depois use sempre o atalho.
+
+SALVAR EMPRESA PARA TODOS:
+ 1. Cadastre no PASSO 3 -> SALVAR EMPRESA
+ 2. Clique em "Salvar na pasta do servidor" (aponta para
+    empresas.json uma vez) OU "Exportar backup" e substitua
+    o empresas.json da pasta.
+
+ARQUIVOS:
+ Calculadora.html          -> o programa (nao apagar)
+ empresas.json             -> cadastros compartilhados
+ Iniciar Calculadora.bat   -> duplo-clique para abrir
+ Criar Atalho.bat          -> cria atalho no Desktop
+
+DUVIDAS:
+ IBS/CBS zerado some da conta (correto, e informativo).
+ Alerta amarelo = empresa regime normal com IBS/CBS=Não.
+ Corrija no cadastro para Sim.
+
+SUPORTE: mande print + valor + empresa.
+============================================================

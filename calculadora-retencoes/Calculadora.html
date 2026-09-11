@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora Retenções - Escritório</title>
+<style>
+*{box-sizing:border-box;font-family:Arial,Helvetica,sans-serif}
+body{margin:0;background:#f1f5f9;color:#111}
+header{background:#0f766e;color:#fff;padding:16px;text-align:center}
+header h1{margin:0;font-size:26px}
+header p{margin:4px 0 0;font-size:15px;opacity:.95}
+main{max-width:980px;margin:0 auto;padding:16px}
+.card{background:#fff;border-radius:12px;padding:20px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,.12)}
+.card h2{margin:0 0 4px;font-size:22px;color:#0f766e}
+.sub{color:#555;font-size:14px;margin:0 0 14px}
+label{display:block;font-weight:bold;font-size:16px;margin:12px 0 4px}
+input,select,textarea{width:100%;font-size:18px;padding:12px;border:2px solid #cbd5e1;border-radius:8px}
+input:focus,select:focus{border-color:#0f766e;outline:none}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:700px){.row{grid-template-columns:1fr}}
+.btn{display:block;width:100%;font-size:20px;font-weight:bold;padding:14px;margin-top:12px;border:none;border-radius:10px;cursor:pointer}
+.btn-go{background:#0f766e;color:#fff}
+.btn-go:hover{background:#115e59}
+.btn-sec{background:#e2e8f0;color:#111;font-size:16px;padding:10px}
+.btn-danger{background:#fee2e2;color:#b91c1c;font-size:15px;padding:8px;margin-top:6px}
+.btn-small{width:auto;display:inline-block;font-size:15px;padding:8px 14px;margin:6px 6px 0 0}
+.result{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:14px}
+.box{background:#f8fafc;border:2px solid #e2e8f0;border-radius:10px;padding:12px;text-align:center}
+.box b{display:block;font-size:14px;color:#475569}
+.box span{font-size:20px;font-weight:bold}
+.box.total{background:#0f766e;color:#fff;border-color:#0f766e}
+.box.total b{color:#ccfbf1}
+.box.liquido{background:#dcfce7;border-color:#16a34a}
+.box.liquido span{color:#15803d;font-size:24px}
+.alert{background:#fef9c3;border:2px solid #eab308;border-radius:10px;padding:12px;font-size:16px;margin-top:12px}
+.info{background:#eff6ff;border:2px solid #3b82f6;border-radius:10px;padding:12px;font-size:15px;margin-top:12px}
+.ibs{opacity:.85;border-top:2px dashed #cbd5e1;margin-top:14px;padding-top:10px}
+.ibs small{color:#64748b}
+table{width:100%;border-collapse:collapse;margin-top:10px;font-size:15px}
+th,td{border:1px solid #cbd5e1;padding:8px;text-align:left}
+th{background:#f1f5f9}
+.memoria{font-size:15px;line-height:1.7}
+@media print{.no-print{display:none}body{background:#fff}main{max-width:100%}}
+.badge{display:inline-block;padding:4px 10px;border-radius:20px;font-size:13px;font-weight:bold}
+.b-simples{background:#dcfce7;color:#166534}
+.b-geral{background:#dbeafe;color:#1e40af}
+.b-hosp{background:#fae8ff;color:#86198f}
+</style>
+</head>
+<body>
+<header>
+<h1>🧮 Calculadora de Retenções</h1>
+<p>Simples Nacional / Lucro Presumido Geral / Presumido Hospitalar — PIS • COFINS • CSLL • IR • ISS 5%</p>
+</header>
+<main>
+
+<div class="card">
+<h2>PASSO 1 — Escolher empresa</h2>
+<p class="sub">Se a empresa não estiver na lista, cadastre no PASSO 3.</p>
+<label>Empresa</label>
+<select id="selEmpresa"></select>
+<div id="resumoEmpresa" class="info" style="display:none"></div>
+<div id="alertaIBS" class="alert" style="display:none"></div>
+<div class="no-print">
+<button class="btn btn-sec btn-small" onclick="recarregar()">🔄 Recarregar lista do servidor</button>
+<button class="btn btn-sec btn-small" onclick="exportar()">💾 Exportar backup</button>
+<label class="btn btn-sec btn-small" style="cursor:pointer">📂 Importar backup<input type="file" id="fileImport" accept=".json" style="display:none"></label>
+<button class="btn btn-sec btn-small" onclick="salvarNoServidor()">💿 Salvar na pasta do servidor</button>
+</div>
+<p class="sub" id="statusSave" style="margin-top:8px"></p>
+</div>
+
+<div class="card">
+<h2>PASSO 2 — Digitar valor da nota</h2>
+<p class="sub">Cálculo automático. IBS/CBS abaixo é só informativo.</p>
+<label>Valor bruto da NF / receita do mês (R$)</label>
+<input id="valorBruto" type="text" inputmode="decimal" placeholder="Ex: 10000,00" value="10000,00">
+<div id="painelSimples" class="info" style="display:none">
+<b>📊 Simples Nacional — cálculo pelo faturamento 12m</b>
+<div class="row">
+<div><label style="font-size:14px">Anexo</label><select id="calcAnexo"><option value="III">III</option><option value="IV">IV</option><option value="V">V</option><option value="I">I</option><option value="II">II</option></select></div>
+<div><label style="font-size:14px">RBT12 — últimos 12 meses (R$)</label><input id="calcRBT12" placeholder="Ex: 250000,00"></div>
+</div>
+<div id="saidaSimples" style="margin-top:8px;font-size:16px"></div>
+</div>
+<div class="row">
+<div>
+<label>ISS 5% foi retido pelo tomador?</label>
+<select id="issRetidoNF"><option value="S">Sim — retido</option><option value="N">Não — recolhido pelo prestador</option></select>
+</div>
+<div>
+<label>Destacar IBS/CBS na nota? (informativo)</label>
+<select id="destacaIBSCBS"><option value="S">Sim</option><option value="N">Não</option></select>
+</div>
+</div>
+<div class="row ibs">
+<div><label style="font-size:14px">IBS % <small>(informativo)</small></label><input id="ibsPerc" type="text" value="0"></div>
+<div><label style="font-size:14px">CBS % <small>(informativo)</small></label><input id="cbsPerc" type="text" value="0"></div>
+</div>
+<button class="btn btn-go" onclick="calcular()">PASSO 3 — CALCULAR ➜</button>
+<div class="result" id="resultado" style="display:none">
+<div class="box"><b>IR retido</b><span id="rIR">—</span></div>
+<div class="box"><b>PIS 0,65%</b><span id="rPIS">—</span></div>
+<div class="box"><b>COFINS 3%</b><span id="rCOFINS">—</span></div>
+<div class="box"><b>CSLL 1%</b><span id="rCSLL">—</span></div>
+<div class="box total"><b>Total federal</b><span id="rFed">—</span></div>
+<div class="box"><b>ISS 5%</b><span id="rISS">—</span></div>
+<div class="box total"><b>Total retido</b><span id="rTot">—</span></div>
+<div class="box liquido"><b>VALOR LÍQUIDO</b><span id="rLiq">—</span></div>
+</div>
+<div id="linhaIBSCBS" class="ibs" style="display:none;font-size:15px"></div>
+<div id="memoria" class="memoria card" style="display:none;background:#f8fafc"></div>
+<div class="no-print"><button class="btn btn-sec" onclick="window.print()">🖨️ Imprimir / Salvar PDF da memória</button></div>
+</div>
+
+<div class="card no-print">
+<h2>PASSO 3 — Cadastrar / editar empresa (perfil gravado)</h2>
+<p class="sub">Alíquota fixa interna: ISS 5% • IR 1,5% geral / 1,2% hospitalar • PIS 0,65% • COFINS 3% • CSLL 1%.</p>
+<input type="hidden" id="editId">
+<label>Nome fantasia / identificação *</label>
+<input id="fNome" placeholder="Ex: Clinica Vida - Matriz">
+<div class="row">
+<div><label>CNPJ</label><input id="fCnpj" placeholder="Somente números" maxlength="18"></div>
+<div><label>Regime *</label>
+<select id="fRegime">
+<option value="simples">Simples Nacional (não retém federais)</option>
+<option value="presumido_geral">Lucro Presumido Geral (IR 1,5%)</option>
+<option value="presumido_hospitalar">Lucro Presumido Hospitalar / Equiparada (IR 1,2%)</option>
+</select></div>
+</div>
+<div class="row">
+<div><label>ISS costuma ser retido?</label>
+<select id="fIss"><option value="sempre">Sempre retido</option><option value="nunca">Nunca retido</option><option value="perguntar">Perguntar a cada NF</option></select></div>
+<div><label>Informar IBS/CBS na NF?</label>
+<select id="fIBS"><option value="S">Sim</option><option value="N">Não</option></select></div>
+</div>
+<div class="row">
+<div><label>Anexo Simples * (só se Simples)</label>
+<select id="fAnexo"><option value="III">Anexo III — serviços geral (6%)</option><option value="IV">Anexo IV — limpeza/vigilância/obra/advocacia (4,5%)</option><option value="V">Anexo V — serviços intelectuais (15,5%)</option><option value="I">Anexo I — comércio (4%)</option><option value="II">Anexo II — indústria (4,5%)</option></select></div>
+<div><label>Faturamento últimos 12 meses — RBT12 (R$) *</label><input id="fRBT12" placeholder="Ex: 250000,00"></div>
+</div>
+<div class="row">
+<div><label>Alíquota DAS manual (opcional, informativo)</label><input id="fDas" placeholder="Ex: 6,00 % (deixe vazio p/ cálculo auto)"></div>
+<div><label>Observações</label><input id="fObs" placeholder="Ex: contrato X, prefeitura Y"></div>
+</div>
+<button class="btn btn-go" onclick="salvarEmpresa()">💾 SALVAR EMPRESA</button>
+<button class="btn btn-sec" onclick="limparForm()">Limpar</button>
+<table><thead><tr><th>Empresa</th><th>Regime</th><th>Ações</th></tr></thead><tbody id="tbEmpresas"></tbody></table>
+</div>
+
+<div class="card"><h2>Ajuda rápida</h2>
+<p class="sub">• <b>Simples:</b> federais zerados, só ISS se retido. Preencha <b>Anexo + RBT12</b> no cadastro — o sistema acha a faixa e calcula <b>alíquota efetiva = (RBT12 × nominal − PD) / RBT12</b> e o DAS do mês. Exigir declaração de optante.<br>
+• <b>Geral:</b> 6,15% federais+IR + ISS 5% se retido.<br>
+• <b>Hospitalar:</b> 5,85% + ISS 5% se retido. Presunção IRPJ 8% / CSLL 12% (requisitos: sociedade empresária + Anvisa).<br>
+• <b>IBS/CBS:</b> nunca abate o líquido em 2026, só informa. Regime normal deve deixar <b>Sim</b>.</p></div>
+
+</main>
+<script>
+const ALIQ={PIS:0.0065,COFINS:0.03,CSLL:0.01,IR_GERAL:0.015,IR_HOSP:0.012,ISS:0.05};
+// Tabelas Simples Nacional LC 123/2006 (LC 155/2016) — teto R$ 4.800.000
+const TABELAS={
+I:[{lim:180000,aliq:0.04,pd:0},{lim:360000,aliq:0.073,pd:5940},{lim:720000,aliq:0.095,pd:13860},{lim:1800000,aliq:0.107,pd:22500},{lim:3600000,aliq:0.143,pd:87300},{lim:4800000,aliq:0.19,pd:378000}],
+II:[{lim:180000,aliq:0.045,pd:0},{lim:360000,aliq:0.078,pd:5940},{lim:720000,aliq:0.10,pd:13860},{lim:1800000,aliq:0.112,pd:22500},{lim:3600000,aliq:0.147,pd:85500},{lim:4800000,aliq:0.30,pd:720000}],
+III:[{lim:180000,aliq:0.06,pd:0},{lim:360000,aliq:0.112,pd:9360},{lim:720000,aliq:0.135,pd:17640},{lim:1800000,aliq:0.16,pd:35640},{lim:3600000,aliq:0.21,pd:125640},{lim:4800000,aliq:0.33,pd:648000}],
+IV:[{lim:180000,aliq:0.045,pd:0},{lim:360000,aliq:0.09,pd:8100},{lim:720000,aliq:0.102,pd:12420},{lim:1800000,aliq:0.14,pd:39780},{lim:3600000,aliq:0.22,pd:183780},{lim:4800000,aliq:0.33,pd:828000}],
+V:[{lim:180000,aliq:0.155,pd:0},{lim:360000,aliq:0.18,pd:4500},{lim:720000,aliq:0.195,pd:9900},{lim:1800000,aliq:0.205,pd:17100},{lim:3600000,aliq:0.23,pd:62100},{lim:4800000,aliq:0.305,pd:540000}]};
+function faixaSimples(anexo,rbt12){const t=TABELAS[anexo]||TABELAS.III;for(let i=0;i<t.length;i++){if(rbt12<=t[i].lim)return{i,faixa:i+1,...t[i]};}return{i:5,faixa:6,...t[5]};}
+function calcSimples(anexo,rbt12,receitaMes){if(rbt12<=0||receitaMes<=0)return null;const f=faixaSimples(anexo,rbt12);const efetiva=(rbt12*f.aliq-f.pd)/rbt12;return{...f,efetiva:Math.max(efetiva,0),das:Math.max(efetiva,0)*receitaMes};}
+const LS_KEY='calc_retencoes_empresas_v1';
+let empresas=[];let fileHandle=null;
+
+function parseBR(v){if(typeof v!=='string')v=String(v??'');v=v.replace(/[R$\s]/g,'').replace(/\./g,'').replace(',','.');let n=parseFloat(v);return isNaN(n)?0:n;}
+function fmt(n){return n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});}
+function fmtPct(n){return n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+' %';}
+function soNumeros(s){return (s||'').replace(/\D/g,'');}
+function cnpjValido(c){c=soNumeros(c);if(c.length!==14||/^(\d)\1+$/.test(c))return false;let t=c.length-2,d=c.substring(0,t),dg=c.substring(t),s=0,p=t-7;for(let i=t;i>=1;i--){s+=+d[t-i]*p--;if(p<2)p=9;}let r=s%11<2?0:11-s%11;if(r!==+dg[0])return false;t++;d=c.substring(0,t);s=0;p=t-7;for(let i=t;i>=1;i--){s+=+d[t-i]*p--;if(p<2)p=9;}r=s%11<2?0:11-s%11;return r===+dg[1];}
+
+async function carregar(){
+let doServer=[];
+try{const r=await fetch('./empresas.json',{cache:'no-store'});if(r.ok){doServer=await r.json();}}catch(e){}
+let doLocal=[];try{doLocal=JSON.parse(localStorage.getItem(LS_KEY)||'[]');}catch(e){}
+const map=new Map();
+[...doServer,...doLocal].forEach(x=>{if(x&&x.id)map.set(x.id,x);});
+empresas=[...map.values()];
+if(!empresas.length){empresas=[{id:'m1',nome:'Modelo - Presumido Geral',cnpj:'',regime:'presumido_geral',issRetido:'sempre',informaIBSCBS:'S',aliquotaDas:'',obs:''}];}
+persistLocal();renderTudo();
+document.getElementById('statusSave').textContent=doServer.length?('Lista do servidor carregada ('+doServer.length+').'):('Servidor não acessível via file:// — usando cópia local. Use "Salvar na pasta do servidor".');
+}
+function persistLocal(){localStorage.setItem(LS_KEY,JSON.stringify(empresas));}
+function regimeLabel(r){return r==='simples'?'Simples':r==='presumido_geral'?'Presumido Geral':'Presumido Hosp.';}
+function regimeBadge(r){return r==='simples'?'<span class="badge b-simples">Simples</span>':r==='presumido_geral'?'<span class="badge b-geral">Geral IR 1,5%</span>':'<span class="badge b-hosp">Hospitalar IR 1,2%</span>';}
+
+function renderTudo(){
+const sel=document.getElementById('selEmpresa');sel.innerHTML='';
+empresas.forEach(e=>{const o=document.createElement('option');o.value=e.id;o.textContent=e.nome+' — '+regimeLabel(e.regime);sel.appendChild(o);});
+const tb=document.getElementById('tbEmpresas');tb.innerHTML='';
+empresas.forEach(e=>{const tr=document.createElement('tr');tr.innerHTML='<td><b>'+esc(e.nome)+'</b><br><small>'+esc(e.cnpj||'—')+(e.regime==='simples'?' • Anexo '+esc(e.anexo||'III')+' • RBT12 '+esc(e.rbt12||e.faturamento12m||'—'):'')+'</small></td><td>'+regimeBadge(e.regime)+'</td><td><button onclick="editar(\''+e.id+'\')">Editar</button> <button onclick="excluir(\''+e.id+'\')">Excluir</button></td>';tb.appendChild(tr);});
+atualizaResumo();
+}
+function esc(s){return String(s||'').replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));}
+
+function empAtual(){return empresas.find(x=>x.id===document.getElementById('selEmpresa').value)||empresas[0];}
+function painelSimplesVisivel(){const e=empAtual();const show=e&&e.regime==='simples';document.getElementById('painelSimples').style.display=show?'block':'none';if(show){document.getElementById('calcAnexo').value=e.anexo||'III';if(e.rbt12)document.getElementById('calcRBT12').value=e.rbt12;}}
+function atualizaResumo(){
+const e=empAtual();if(!e)return;
+const box=document.getElementById('resumoEmpresa');box.style.display='block';
+box.innerHTML='<b>'+esc(e.nome)+'</b> '+regimeBadge(e.regime)+'<br>CNPJ: '+esc(e.cnpj||'—')+' • ISS 5% '+(e.issRetido==='sempre'?'sempre retido':e.issRetido==='nunca'?'nunca retido':'perguntar na NF')+' • IBS/CBS: '+(e.informaIBSCBS==='S'?'Sim':'Não')+(e.regime==='simples'?'<br>Anexo '+esc(e.anexo||'III')+' • RBT12: R$ '+esc(e.rbt12||'—'):'')+(e.aliquotaDas?'<br>DAS manual: '+esc(e.aliquotaDas):'')+(e.obs?'<br>Obs: '+esc(e.obs):'');
+painelSimplesVisivel();
+const iss=document.getElementById('issRetidoNF');
+if(e.issRetido==='sempre')iss.value='S';else if(e.issRetido==='nunca')iss.value='N';
+document.getElementById('destacaIBSCBS').value=e.informaIBSCBS||'S';
+const alerta=document.getElementById('alertaIBS');
+if(e.regime!=='simples'&&e.informaIBSCBS==='N'){alerta.style.display='block';alerta.innerHTML='⚠️ <b>Atenção:</b> empresa do <b>regime normal</b> com "Informar IBS/CBS = Não". O correto é <b>Sim</b> (mesmo que só informativo em 2026). Corrija no cadastro.';}
+else{alerta.style.display='none';}
+}
+
+function calcular(){
+const e=empAtual();if(!e){alert('Cadastre uma empresa primeiro.');return;}
+const bruto=parseBR(document.getElementById('valorBruto').value);
+if(bruto<=0){alert('Digite o valor bruto da NF.');return;}
+const issRet=document.getElementById('issRetidoNF').value==='S';
+const dest=document.getElementById('destacaIBSCBS').value==='S';
+const ibsP=parseBR(document.getElementById('ibsPerc').value)/100;
+const cbsP=parseBR(document.getElementById('cbsPerc').value)/100;
+let ir=0,pis=0,cof=0,csll=0,dasSimples=null,txtSimples='';
+if(e.regime==='presumido_geral'){ir=bruto*ALIQ.IR_GERAL;pis=bruto*ALIQ.PIS;cof=bruto*ALIQ.COFINS;csll=bruto*ALIQ.CSLL;}
+else if(e.regime==='presumido_hospitalar'){ir=bruto*ALIQ.IR_HOSP;pis=bruto*ALIQ.PIS;cof=bruto*ALIQ.COFINS;csll=bruto*ALIQ.CSLL;}
+else if(e.regime==='simples'){
+ const anexo=(document.getElementById('calcAnexo').value||e.anexo||'III');
+ const rbt12=parseBR(document.getElementById('calcRBT12').value||e.rbt12||'0');
+ dasSimples=calcSimples(anexo,rbt12,bruto);
+ if(dasSimples){txtSimples='Anexo '+anexo+' • '+dasSimples.faixa+'ª faixa • Nominal '+fmtPct(dasSimples.aliq*100)+' • PD '+fmt(dasSimples.pd)+' • <b>Efetiva '+fmtPct(dasSimples.efetiva*100)+'</b> • <b>DAS '+fmt(dasSimples.das)+'</b>';
+ document.getElementById('saidaSimples').innerHTML='RBT12 '+fmt(rbt12)+'<br>'+txtSimples+(issRet?'<br>ISS 5% retido ('+fmt(bruto*ALIQ.ISS)+') abate do DAS — conferir PGDAS.':'');}
+ else{document.getElementById('saidaSimples').innerHTML='⚠️ Preencha o RBT12 para achar a alíquota do mês.';}
+}
+const fed=ir+pis+cof+csll;
+const iss=issRet?bruto*ALIQ.ISS:0;
+const tot=fed+iss,liq=bruto-tot;
+const ibsV=dest?bruto*ibsP:0,cbsV=dest?bruto*cbsP:0;
+['resultado'].forEach(id=>document.getElementById(id).style.display='grid');
+document.getElementById('rIR').textContent=fmt(ir);
+document.getElementById('rPIS').textContent=fmt(pis);
+document.getElementById('rCOFINS').textContent=fmt(cof);
+document.getElementById('rCSLL').textContent=fmt(csll);
+document.getElementById('rFed').textContent=fmt(fed);
+document.getElementById('rISS').textContent=fmt(iss)+(issRet?'':' (não retido)');
+document.getElementById('rTot').textContent=fmt(tot);
+document.getElementById('rLiq').textContent=fmt(liq);
+const lb=document.getElementById('linhaIBSCBS');
+if(dest&&(ibsP>0||cbsP>0)){lb.style.display='block';lb.innerHTML='ℹ️ <b>Informativo (não abate):</b> IBS '+fmt(ibsV)+' + CBS '+fmt(cbsV)+' = '+fmt(ibsV+cbsV);}
+else{lb.style.display='none';}
+const mem=document.getElementById('memoria');mem.style.display='block';
+let regra=e.regime==='simples'?('Simples: federais zerados (exigir declaração de optante). '+(dasSimples?txtSimples+'. DAS é guia à parte, não abate do líquido da NF.':'')):e.regime==='presumido_geral'?'Presumido Geral: IR 1,5% + PIS 0,65% + COFINS 3% + CSLL 1% = 6,15%.':'Hospitalar/Equiparada: IR 1,2% + PIS 0,65% + COFINS 3% + CSLL 1% = 5,85%. Presunção IRPJ 8% / CSLL 12%.';
+mem.innerHTML='<b>Memória de cálculo — '+esc(e.nome)+'</b><br>Data: '+new Date().toLocaleString('pt-BR')+'<br>Valor bruto: '+fmt(bruto)+'<br>'+regra+'<br>IR: '+fmt(ir)+' • PIS: '+fmt(pis)+' • COFINS: '+fmt(cof)+' • CSLL: '+fmt(csll)+'<br>ISS 5% '+(issRet?'retido':'não retido')+': '+fmt(iss)+'<br><b>Total retido: '+fmt(tot)+' • Líquido: '+fmt(liq)+'</b>'+(dest?'<br>IBS/CBS informativo: '+fmt(ibsV+cbsV):'');
+}
+
+function salvarEmpresa(){
+const id=document.getElementById('editId').value||('e'+Date.now());
+const nome=document.getElementById('fNome').value.trim();
+const cnpj=soNumeros(document.getElementById('fCnpj').value);
+const regime=document.getElementById('fRegime').value;
+if(!nome){alert('Digite o nome da empresa.');return;}
+if(cnpj&&!cnpjValido(cnpj)){if(!confirm('CNPJ inválido. Salvar mesmo assim?'))return;}
+const obj={id,nome,cnpj,regime,anexo:document.getElementById('fAnexo').value,rbt12:document.getElementById('fRBT12').value.trim(),issRetido:document.getElementById('fIss').value,informaIBSCBS:document.getElementById('fIBS').value,aliquotaDas:document.getElementById('fDas').value.trim(),obs:document.getElementById('fObs').value.trim()};
+const i=empresas.findIndex(x=>x.id===id);
+if(i>=0)empresas[i]=obj;else empresas.push(obj);
+persistLocal();renderTudo();limparForm();
+document.getElementById('selEmpresa').value=id;atualizaResumo();
+alert('Empresa salva nesta máquina. Clique em "Salvar na pasta do servidor" para compartilhar.');
+}
+function editar(id){const e=empresas.find(x=>x.id===id);if(!e)return;document.getElementById('editId').value=e.id;document.getElementById('fNome').value=e.nome;document.getElementById('fCnpj').value=e.cnpj||'';document.getElementById('fRegime').value=e.regime;document.getElementById('fAnexo').value=e.anexo||'III';document.getElementById('fRBT12').value=e.rbt12||e.faturamento12m||'';document.getElementById('fIss').value=e.issRetido||'sempre';document.getElementById('fIBS').value=e.informaIBSCBS||'S';document.getElementById('fDas').value=e.aliquotaDas||'';document.getElementById('fObs').value=e.obs||'';window.scrollTo(0,document.body.scrollHeight);}
+function excluir(id){if(!confirm('Excluir esta empresa?'))return;empresas=empresas.filter(x=>x.id!==id);persistLocal();renderTudo();}
+function limparForm(){document.getElementById('editId').value='';['fNome','fCnpj','fRBT12','fDas','fObs'].forEach(k=>document.getElementById(k).value='');}
+function recarregar(){carregar();}
+function exportar(){const blob=new Blob([JSON.stringify(empresas,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='empresas-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click();}
+async function salvarNoServidor(){
+try{
+if(!fileHandle){
+if(!window.showOpenFilePicker){exportar();alert('Navegador sem gravação direta. Foi baixado o backup — copie para a pasta do servidor substituindo empresas.json.');return;}
+const [h]=await window.showOpenFilePicker({types:[{description:'JSON',accept:{'application/json':['.json']}}]});
+fileHandle=h;
+}
+const w=await fileHandle.createWritable();await w.write(JSON.stringify(empresas,null,2));await w.close();
+document.getElementById('statusSave').textContent='✅ Salvo na pasta do servidor em '+new Date().toLocaleString('pt-BR');
+}catch(err){alert('Não foi possível salvar direto: '+err.message+'. Use Exportar backup.');}
+}
+document.getElementById('selEmpresa')?.addEventListener('change',atualizaResumo);
+document.getElementById('calcAnexo')?.addEventListener('change',()=>{});
+document.getElementById('valorBruto')?.addEventListener('input',()=>{const e=empAtual();if(e&&e.regime==='simples'&&document.getElementById('resultado').style.display==='grid')calcular();});
+document.getElementById('fRegime')?.addEventListener('change',function(){document.getElementById('fIBS').value=this.value==='simples'?'N':'S';});
+document.getElementById('fileImport')?.addEventListener('change',function(ev){const f=ev.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const arr=JSON.parse(r.result);if(Array.isArray(arr)){empresas=arr;persistLocal();renderTudo();alert('Backup importado.');}}catch(e){alert('Arquivo inválido.');}};r.readAsText(f);});
+carregar();
+</script>
+</body>
+</html>

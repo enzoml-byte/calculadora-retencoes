@@ -83,6 +83,17 @@ td button{font-size:13px;padding:5px 10px;margin-right:4px;border-radius:6px;bor
 .ajuda{border-left:5px solid var(--gold)}
 .ajuda ul{margin:6px 0 0;padding-left:18px;font-size:13.5px;color:#33415e;line-height:1.8}
 footer{text-align:center;color:var(--muted);font-size:12px;padding:10px}
+/* abas */
+.tabs{display:flex;gap:10px;margin-bottom:14px}
+.tab{flex:1;padding:13px;border:none;border-radius:10px;font-size:17px;font-weight:800;cursor:pointer;background:#fff;color:var(--navy);box-shadow:0 1px 4px rgba(11,27,51,.12);border:2px solid transparent}
+.tab.on{background:var(--navy);color:#fff;border-color:var(--gold)}
+.view{display:none}
+.view.active{display:block}
+/* seletor de regime clicavel */
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}
+.seg button{padding:13px 8px;border-radius:10px;border:2px solid var(--line);background:#f4f6fa;font-size:15px;font-weight:800;color:var(--muted);cursor:pointer;line-height:1.4}
+.seg button small{display:block;font-size:12px;font-weight:600}
+.seg button.on{border-color:var(--gold);background:#fff8e1;color:var(--navy)}
 @media(max-width:960px){.layout{grid-template-columns:1fr}.hbadge{display:none}.htitle h1{font-size:19px}}
 @media print{.no-print{display:none}body{background:#fff}main{max-width:100%}.layout{grid-template-columns:1fr}header{padding:8px}}
 </style>
@@ -100,6 +111,11 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:10px}
 </div>
 </header>
 <main>
+<div class="tabs no-print">
+<button class="tab on" id="tabEmpresa" onclick="trocarAba('empresa')">🏢 Por Empresa</button>
+<button class="tab" id="tabRapida" onclick="trocarAba('rapida')">⚡ Emissão Rápida (avulsa)</button>
+</div>
+<section id="viewEmpresa" class="view active">
 <div class="layout">
 <div class="col">
 
@@ -208,6 +224,46 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:10px}
 
 </div>
 </div>
+</section>
+<section id="viewRapida" class="view">
+<div class="card" style="max-width:760px;margin:0 auto">
+<div class="phead"><span class="pnum">⚡</span><h2>Emissão Rápida — cálculo avulso</h2></div>
+<p class="sub">Sem cadastro. Para Lucro Presumido: escolha com ou sem equiparação hospitalar.</p>
+<label>Valor Bruto da NF (R$)</label>
+<div class="bigval"><span class="prefix">R$</span><input id="rapValor" type="text" inputmode="decimal" placeholder="10.000,00" value="10.000,00"><button class="copy no-print" title="Copiar valor" onclick="copiarRap()">📋</button></div>
+<label>Regime da empresa</label>
+<div class="seg no-print">
+<button id="segGeral" class="on" onclick="setRapRegime('geral')">Presumido Geral<small>IR 1,50% • total 6,15%</small></button>
+<button id="segHosp" onclick="setRapRegime('hosp')">Presumido Hospitalar<small>IR 1,20% • total 5,85%</small></button>
+</div>
+<input type="hidden" id="rapRegime" value="geral">
+<div class="row">
+<div><label>ISS 5% retido pelo tomador?</label>
+<select id="rapIss"><option value="S">Sim — retido</option><option value="N">Não — recolhido pelo prestador</option></select></div>
+<div><label>Destacar IBS/CBS? (informativo)</label>
+<select id="rapDest"><option value="S">Sim</option><option value="N">Não</option></select></div>
+</div>
+<div class="row">
+<div><label>Alíquota IBS %</label><input id="rapIbs" type="text" value="0"></div>
+<div><label>Alíquota CBS %</label><input id="rapCbs" type="text" value="0"></div>
+</div>
+<button class="btn btn-go" onclick="calcularRapida()">▷ &nbsp;CALCULAR</button>
+<div class="rsect" id="rapRTitle" style="display:none">▷ Resultado do Cálculo Tributário</div>
+<div class="result" id="rapResultado" style="display:none">
+<div class="box"><b>IR Retido</b><span id="rapRIR">—</span></div>
+<div class="box"><b>PIS</b><span id="rapRPIS">—</span></div>
+<div class="box"><b>COFINS</b><span id="rapRCOFINS">—</span></div>
+<div class="box"><b>CSLL</b><span id="rapRCSLL">—</span></div>
+<div class="box total"><b>Total Federal</b><span id="rapRFed">—</span></div>
+<div class="box"><b>ISS Retido</b><span id="rapRISS">—</span></div>
+<div class="box total"><b>Total Retido Geral</b><span id="rapRTot">—</span></div>
+<div class="box liquido"><b>Valor Líquido a Receber</b><span id="rapRLiq">—</span></div>
+</div>
+<div id="rapLinhaIBS" class="ibs" style="display:none;font-size:14px"></div>
+<div id="rapMemoria" class="memoria card" style="display:none;background:#f8fafc"></div>
+<div class="no-print"><button class="btn btn-sec" onclick="window.print()">🖨️ Imprimir / Salvar PDF da memória</button></div>
+</div>
+</section>
 <footer>Excellence Contábil &bull; Ferramenta interna — confira sempre com o PGDAS-D e a legislação vigente.</footer>
 </main>
 <script>
@@ -354,6 +410,54 @@ document.getElementById('statusSave').textContent='✅ Salvo na pasta do servido
 document.getElementById('selEmpresa')?.addEventListener('change',atualizaResumo);
 document.getElementById('fRegime')?.addEventListener('change',function(){document.getElementById('fIBS').value=this.value==='simples'?'N':'S';});
 document.getElementById('fileImport')?.addEventListener('change',function(ev){const f=ev.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const arr=JSON.parse(r.result);if(Array.isArray(arr)){empresas=arr;persistLocal();renderTudo();alert('Backup importado.');}}catch(e){alert('Arquivo inválido.');}};r.readAsText(f);});
+function trocarAba(qual){
+const emp=qual==='empresa';
+document.getElementById('viewEmpresa').classList.toggle('active',emp);
+document.getElementById('viewRapida').classList.toggle('active',!emp);
+document.getElementById('tabEmpresa').classList.toggle('on',emp);
+document.getElementById('tabRapida').classList.toggle('on',!emp);
+window.scrollTo(0,0);
+}
+function setRapRegime(r){
+document.getElementById('rapRegime').value=r;
+document.getElementById('segGeral').classList.toggle('on',r==='geral');
+document.getElementById('segHosp').classList.toggle('on',r==='hosp');
+if(document.getElementById('rapResultado').style.display==='grid')calcularRapida();
+}
+function copiarRap(){const v=document.getElementById('rapValor').value;if(navigator.clipboard)navigator.clipboard.writeText(v);}
+function calcularRapida(){
+const hosp=document.getElementById('rapRegime').value==='hosp';
+const bruto=parseBR(document.getElementById('rapValor').value);
+if(bruto<=0){alert('Digite o valor bruto da NF.');return;}
+const issRet=document.getElementById('rapIss').value==='S';
+const dest=document.getElementById('rapDest').value==='S';
+const ibsP=parseBR(document.getElementById('rapIbs').value)/100;
+const cbsP=parseBR(document.getElementById('rapCbs').value)/100;
+const ir=bruto*(hosp?ALIQ.IR_HOSP:ALIQ.IR_GERAL);
+const pis=bruto*ALIQ.PIS,cof=bruto*ALIQ.COFINS,csll=bruto*ALIQ.CSLL;
+const fed=ir+pis+cof+csll;
+const iss=issRet?bruto*ALIQ.ISS:0;
+const tot=fed+iss,liq=bruto-tot;
+const ibsV=dest?bruto*ibsP:0,cbsV=dest?bruto*cbsP:0;
+document.getElementById('rapResultado').style.display='grid';
+document.getElementById('rapRTitle').style.display='block';
+document.querySelector('#rapRIR').previousElementSibling.textContent='IR Retido ('+(hosp?'1,20%':'1,50%')+')';
+document.getElementById('rapRIR').textContent=fmt(ir);
+document.getElementById('rapRPIS').textContent=fmt(pis);
+document.getElementById('rapRCOFINS').textContent=fmt(cof);
+document.getElementById('rapRCSLL').textContent=fmt(csll);
+document.querySelector('#rapRFed').previousElementSibling.textContent='Total Federal ('+fmtPct((fed/bruto)*100)+')';
+document.getElementById('rapRFed').textContent=fmt(fed);
+document.getElementById('rapRISS').textContent=fmt(iss)+(issRet?'':' (não retido)');
+document.getElementById('rapRTot').textContent=fmt(tot);
+document.getElementById('rapRLiq').textContent=fmt(liq);
+const lb=document.getElementById('rapLinhaIBS');
+if(dest&&(ibsP>0||cbsP>0)){lb.style.display='block';lb.innerHTML='ℹ️ <b>Informativo (não abate):</b> IBS '+fmt(ibsV)+' + CBS '+fmt(cbsV)+' = '+fmt(ibsV+cbsV);}
+else{lb.style.display='none';}
+const mem=document.getElementById('rapMemoria');mem.style.display='block';
+const regra=hosp?'Presumido Hospitalar/Equiparada (avulso): IR 1,2% + PIS 0,65% + COFINS 3% + CSLL 1% = 5,85%.':'Presumido Geral (avulso): IR 1,5% + PIS 0,65% + COFINS 3% + CSLL 1% = 6,15%.';
+mem.innerHTML='<b>Memória — Emissão rápida (sem cadastro)</b><br>Data: '+new Date().toLocaleString('pt-BR')+'<br>Valor bruto: '+fmt(bruto)+'<br>'+regra+'<br>IR: '+fmt(ir)+' • PIS: '+fmt(pis)+' • COFINS: '+fmt(cof)+' • CSLL: '+fmt(csll)+'<br>ISS 5% '+(issRet?'retido':'não retido')+': '+fmt(iss)+'<br><b>Total retido: '+fmt(tot)+' • Líquido: '+fmt(liq)+'</b>'+(dest?'<br>IBS/CBS informativo: '+fmt(ibsV+cbsV):'');
+}
 carregar();
 </script>
 </body>

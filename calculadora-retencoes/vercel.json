@@ -1,8 +1,9 @@
 {
   "buildCommand": "echo 'static site'",
   "outputDirectory": ".",
-  "framework": null,
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/Calculadora.html" }
+  "framework": "static",
+  "routes": [
+    { "src": "/", "dest": "/Calculadora.html" },
+    { "src": "/(.*)", "dest": "/Calculadora.html" }
   ]
 }

@@ -1,0 +1,91 @@
+============================================================
+  SIMPLES CALCULATOR - Guia Rapido (Para Nao-Programadores)
+============================================================
+
+O QUE EH:
+---------
+Sistema para calcular a aliquota do Simples Nacional (Anexos III, IV, V)
+a partir do PDF do PGDAS-D. Guarda historico, projeta proximo mes e
+mostra memoria de calculo.
+
+------------------------------------------------------------
+COMO USAR (3 PASSOS):
+------------------------------------------------------------
+
+1. ABRA O DOCKER DESKTOP
+   - Procure "Docker Desktop" no menu Iniciar
+   - Espere o icone da baleia ficar VERDE (rodando)
+
+2. DUPLO-CLIQUE EM UM DOS ARQUIVOS ABAIXO:
+
+   [RECOMENDADO] Iniciar Simples Calculator.bat
+       -> Modo desenvolvimento (porta 3000)
+       -> Recarrega automaticao ao mudar codigo
+       
+   [ALTERNATIVO] Iniciar Producao.bat
+       -> Modo producao (porta 80)
+       -> Mais rapido, build otimizado
+
+   [DIAGNOSTICO] Verificar Docker.bat
+       -> Rode SE der erro nos outros
+       -> Mostra o que esta faltando
+
+3. AGUARDE O NAVEGADOR ABRIR
+   - Primeira vez: 3-5 minutos (baixa imagens Docker)
+   - Proximas vezes: 10-15 segundos
+
+------------------------------------------------------------
+ARQUIVOS NA PASTA:
+------------------------------------------------------------
+Iniciar Simples Calculator.bat     -> Duplo-clique: MODO DEV (porta 3000)
+Iniciar Producao.bat               -> Duplo-clique: MODO PROD (porta 80)
+Verificar Docker.bat               -> Duplo-clique: DIAGNOSTICO
+Criar Atalho.bat                   -> Duplo-clique: CRIA ATALHO NA AREA DE TRABALHO
+LEIA-ME.txt                        -> Este arquivo
+
+------------------------------------------------------------
+PARA FACILITAR AINDA MAIS:
+------------------------------------------------------------
+1. Duplo-clique em "Criar Atalho.bat"
+2. Vai aparecer "Simples Calculator" na Area de Trabalho
+3. Da proxima vez, so clique no atalho
+
+------------------------------------------------------------
+RESOLUCAO DE PROBLEMAS:
+------------------------------------------------------------
+
+"Docker nao encontrado"
+  -> Instale o Docker Desktop: https://www.docker.com/products/docker-desktop/
+  -> Reinicie o computador apos instalar
+
+"Docker daemon nao esta rodando"
+  -> Abra o Docker Desktop (menu Iniciar)
+  -> Espere o icone da baleia ficar VERDE
+
+"Porta 3000/3001/80 ja em uso"
+  -> Feche outros programas (outros Docker, Node, etc.)
+  -> Ou reinicie o computador
+
+"Erro ao construir imagem"
+  -> Rode "Verificar Docker.bat"
+  -> Se tudo OK, tente: docker compose down -v && docker compose up --build
+
+Navegador nao abre automatico
+  -> Acesse manualmente:
+     Modo Dev:  http://localhost:3000
+     Modo Prod: http://localhost
+
+------------------------------------------------------------
+DADOS SALVOS (NAO PERDE AO REINICIAR):
+------------------------------------------------------------
+- Banco SQLite fica em volume Docker (persiste)
+- Para backup: use Docker Desktop > Volumes > simples-calculator_sqlite_data
+- Para resetar tudo: docker compose down -v
+
+------------------------------------------------------------
+SUPORTE:
+------------------------------------------------------------
+Se der erro, tire print da tela preta (terminal) e envie
+para quem desenvolveu o sistema.
+
+============================================================

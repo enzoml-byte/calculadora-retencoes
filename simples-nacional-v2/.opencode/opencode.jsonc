@@ -1,0 +1,8 @@
+{
+  // Espelho. Canonico: ../AGENTS.md - ler ele primeiro em todo turno.
+  "$schema": "https://opencode.ai/config.schema.json",
+  "provider": "openai",
+  "model": "gpt-4o-mini",
+  "temperature": 0.2,
+  "max_tokens": 4096
+}

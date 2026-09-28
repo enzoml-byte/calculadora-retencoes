@@ -1,0 +1,7 @@
+{
+  "name": "@v2/tax-rules",
+  "version": "2024.1.0",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts"
+}

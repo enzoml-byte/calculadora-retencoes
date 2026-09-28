@@ -1,0 +1,75 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: development
+    container_name: simples-backend
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./backend/src:/app/backend/src
+      - ./shared/src:/app/shared/src
+      - ./prisma:/app/prisma
+      - sqlite_data:/app/backend/data
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=file:./data/dev.db
+      - PORT=3001
+    depends_on:
+      - prisma-init
+    networks:
+      - simples-network
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      target: development
+    container_name: simples-frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend/src:/app/frontend/src
+      - ./frontend/index.html:/app/frontend/index.html
+      - ./shared/src:/app/shared/src
+    environment:
+      - NODE_ENV=development
+      - VITE_API_URL=http://localhost:3001/api
+    depends_on:
+      - backend
+    networks:
+      - simples-network
+    restart: unless-stopped
+
+  prisma-init:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: development
+    container_name: simples-prisma-init
+    volumes:
+      - ./prisma:/app/prisma
+      - sqlite_data:/app/backend/data
+    environment:
+      - DATABASE_URL=file:./data/dev.db
+    working_dir: /app/backend
+    command: >
+      sh -c "
+        mkdir -p /app/backend/data &&
+        npx prisma generate --schema=/app/prisma/schema.prisma &&
+        npx prisma db push --schema=/app/prisma/schema.prisma &&
+        npx prisma db seed --schema=/app/prisma/schema.prisma &&
+        echo 'Database initialized successfully'
+      "
+    networks:
+      - simples-network
+
+volumes:
+  sqlite_data:
+    driver: local
+
+networks:
+  simples-network:
+    driver: bridge

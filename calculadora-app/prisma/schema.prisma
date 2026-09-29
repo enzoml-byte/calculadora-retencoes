@@ -95,6 +95,7 @@ model Nota {
   regime                Regime   @default(PRESUMIDO_GERAL)
   retencoes             Json     // {ir, pis, cofins, csll, iss, totalFederal, totalGeral, liquido, ibs, cbs}
   aliquotaEfetivaSimples Decimal? @db.Decimal(10,8) // 8 casas para Simples
+  dasSimples            Decimal? @db.Decimal(10,8)
   emitidaEm             DateTime @default(now())
   xmlNfe                String?  @db.Text
   createdAt             DateTime @default(now())

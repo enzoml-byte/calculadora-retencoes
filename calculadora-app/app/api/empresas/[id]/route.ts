@@ -58,9 +58,10 @@ export async function PUT(request: Request, { params }: RouteParams) {
       }
 
       try {
-        cnpjData = await lookupCNPJ(cleanCnpj)
+        cnpjData = await lookupCNPJ(cleanCnpj) as any
       } catch (e) {
         // Keep existing CNPJ data if lookup fails
+        cnpjData = null
       }
     }
 
@@ -75,7 +76,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
         rbt12: data.rbt12,
         issRetido: data.issRetido,
         informaIbsCbs: data.informaIbsCbs,
-        dadosCnpj: cnpjData,
+        dadosCnpj: cnpjData as any,
       },
     })
 

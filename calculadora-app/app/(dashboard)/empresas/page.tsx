@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { Button, Input, Select, Card, CardContent, CardHeader, CardTitle, Badge, Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui'
 import { Building2, Plus, Edit, Trash2, Search, Loader2 } from 'lucide-react'
-import { formatCurrency } from '@/lib/calculations'
+import { formatCurrency, parseBR } from '@/lib/calculations'
 import { empresaCreateSchema } from '@/lib/validators'
 
 type Empresa = {
@@ -68,7 +68,7 @@ export default function EmpresasPage() {
 
     if (!parsed.success) {
       const errs: Record<string, string> = {}
-      parsed.error.errors.forEach(err => {
+      parsed.error.issues.forEach((err: any) => {
         if (err.path[0]) errs[err.path[0] as string] = err.message
       })
       setErrors(errs)

@@ -37,7 +37,8 @@ export default async function middleware(request: NextRequest) {
   // Rate limiting
   const session = await auth()
   const isAuthenticated = !!session?.user
-  const rateKey = isAuthenticated ? `rate:user:${session.user.id}` : `rate:ip:${ip}`
+  const userId = session?.user?.id
+  const rateKey = isAuthenticated && userId ? `rate:user:${userId}` : `rate:ip:${ip}`
   const limit = isAuthenticated ? RATE_LIMIT_AUTHENTICATED : RATE_LIMIT_ANONYMOUS
 
   const rateResult = await rateLimitCheck(rateKey, limit, RATE_LIMIT_WINDOW_MS)

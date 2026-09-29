@@ -5,6 +5,28 @@ import { prisma } from './db'
 import bcrypt from 'bcryptjs'
 import { loginSchema } from './validators'
 
+// Extend the built-in types
+declare module 'next-auth' {
+  interface Session {
+    user: {
+      id: string
+      email: string
+      name?: string | null
+      role: string
+    }
+  }
+  interface User {
+    role: string
+  }
+}
+
+declare module '@auth/core/jwt' {
+  interface JWT {
+    id?: string
+    role?: string
+  }
+}
+
 export const authConfig: NextAuthConfig = {
   adapter: PrismaAdapter(prisma),
   session: { strategy: 'jwt' },
@@ -38,7 +60,7 @@ export const authConfig: NextAuthConfig = {
     jwt: async ({ token, user }) => {
       if (user) {
         token.id = user.id
-        token.role = (user as any).role
+        token.role = user.role
       }
       return token
     },

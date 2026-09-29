@@ -46,7 +46,7 @@ async function main() {
       razaoSocial: 'Padaria Pão Bom LTDA',
       nomeFantasia: 'Padaria Pão Bom',
       regime: Regime.SIMPLES,
-      anexo: 'III',
+      anexo: 'III' as const,
       rbt12: 250000,
       issRetido: IssRetido.PERGUNTAR,
       informaIbsCbs: false,
@@ -81,7 +81,7 @@ async function main() {
     })
 
     if (!existing) {
-      await prisma.empresa.create({ data: emp })
+      await prisma.empresa.create({ data: emp as any })
       console.log(`✅ Empresa criada: ${emp.nomeFantasia}`)
     }
   }
@@ -94,7 +94,7 @@ async function main() {
       razaoSocial: 'Escritório Contábil Beta LTDA',
       nomeFantasia: 'Contábil Beta',
       regime: Regime.SIMPLES,
-      anexo: 'III',
+      anexo: 'III' as const,
       rbt12: 180000,
       issRetido: IssRetido.SEMPRE,
       informaIbsCbs: false,
@@ -118,7 +118,7 @@ async function main() {
     })
 
     if (!existing) {
-      await prisma.empresa.create({ data: emp })
+      await prisma.empresa.create({ data: emp as any })
       console.log(`✅ Empresa criada para usuário: ${emp.nomeFantasia}`)
     }
   }

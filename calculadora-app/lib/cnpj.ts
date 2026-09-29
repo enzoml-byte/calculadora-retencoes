@@ -46,14 +46,14 @@ const ANEXO_V_CNAES = [
   '8710', '8720', '8730', '8790', '8810', '8890',
 ]
 
-function identifyAnexoByCNAE(cnae: string): 'III' | 'IV' | 'V' | null {
+function identifyAnexoByCNAE(cnae: string): 'III' | 'IV' | 'V' | undefined {
   const prefix = cnae.substring(0, 4)
   
   if (ANEXO_IV_CNAES.includes(prefix)) return 'IV'
   if (ANEXO_V_CNAES.includes(prefix)) return 'V'
   if (ANEXO_III_CNAES.includes(prefix)) return 'III'
   
-  return null
+  return undefined
 }
 
 async function fetchBrasilAPI(cnpj: string): Promise<any> {

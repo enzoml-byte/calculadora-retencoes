@@ -68,6 +68,7 @@ export async function POST(request: Request) {
     const nota = await prisma.nota.create({
       data: {
         empresaId: data.empresaId,
+        userId: session.user.id,
         numeroNf: nextNumber,
         serie: data.serie || '1',
         valorBruto: data.valorBruto,

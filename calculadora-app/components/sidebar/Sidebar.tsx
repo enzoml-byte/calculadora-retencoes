@@ -94,7 +94,7 @@ export function Sidebar({ collapsed = false, onToggle }: { collapsed?: boolean; 
               {!collapsed && (
                 <div className="flex-1 min-w-0">
                   <p className="text-white text-sm font-medium truncate">{session.user.name || session.user.email}</p>
-                  <p className="text-slate-400 text-xs truncate capitalize">{session.user.role?.toLowerCase()}</p>
+                  <p className="text-slate-400 text-xs truncate capitalize">{session.user.role?.toLowerCase() || 'user'}</p>
                 </div>
               )}
             </div>

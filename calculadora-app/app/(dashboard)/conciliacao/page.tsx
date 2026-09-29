@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
-import { Button, Input, Card, CardContent, CardHeader, CardTitle, Badge, Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui'
+import { Button, Input, Card, CardContent, CardHeader, CardTitle, Badge, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Select } from '@/components/ui'
 import { FileText, Upload, Loader2, CheckCircle, XCircle, AlertCircle, Download, Search, Filter } from 'lucide-react'
 import { formatCurrency } from '@/lib/calculations'
 
@@ -17,6 +17,7 @@ type Conciliacao = {
   nota?: {
     id: string
     numeroNf: string
+    serie: string
     valorBruto: number
     liquido: number
     empresa: {

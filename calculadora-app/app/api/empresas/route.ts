@@ -25,7 +25,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const session = await auth()
-    if (!session?.user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+    if (!session?.user?.id) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
 
     const body = await request.json()
     const parsed = empresaCreateSchema.safeParse(body)
@@ -63,7 +63,7 @@ export async function POST(request: Request) {
         rbt12: data.rbt12,
         issRetido: data.issRetido,
         informaIbsCbs: data.informaIbsCbs,
-        dadosCnpj: cnpjData,
+        dadosCnpj: cnpjData as any,
       },
     })
 

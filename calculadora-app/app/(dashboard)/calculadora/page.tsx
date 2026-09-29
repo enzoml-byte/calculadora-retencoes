@@ -33,6 +33,8 @@ type RetencaoResult = {
   aliquotaEfetivaSimples?: number
   dasSimples?: number
   simplesFaixa?: number
+  parcelaDeduzir?: number
+  aliquotaNominal?: number
 }
 
 export default function CalculadoraPage() {
@@ -50,10 +52,10 @@ export default function CalculadoraPage() {
   const [empresaForm, setEmpresaForm] = useState({
     razaoSocial: '',
     cnpj: '',
-    regime: 'PRESUMIDO_GERAL',
-    anexo: 'III',
+    regime: 'PRESUMIDO_GERAL' as const,
+    anexo: 'III' as const,
     rbt12: '',
-    issRetido: 'SEMPRE',
+    issRetido: 'SEMPRE' as const,
     informaIbsCbs: true,
   })
   const [empresaError, setEmpresaError] = useState<Record<string, string>>({})
@@ -128,7 +130,7 @@ export default function CalculadoraPage() {
 
     if (!parsed.success) {
       const errors: Record<string, string> = {}
-      parsed.error.errors.forEach(err => {
+      parsed.error.issues.forEach((err: any) => {
         if (err.path[0]) errors[err.path[0] as string] = err.message
       })
       setEmpresaError(errors)
@@ -292,7 +294,7 @@ export default function CalculadoraPage() {
                 </div>
               )}
 
-              <Button onClick={handleCalcular} className="w-full" size="lg" loading={result === null && valorBruto}>
+              <Button onClick={handleCalcular} className="w-full" size="lg" loading={loading}>
                 Calcular Retenções
               </Button>
             </CardContent>
@@ -353,7 +355,7 @@ export default function CalculadoraPage() {
                 <p className="font-medium text-amber-800 mb-2">Simples Nacional - Detalhamento</p>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
                   <div><span className="text-muted">Faixa:</span> {result.simplesFaixa}ª</div>
-                  <div><span className="text-muted">Nominal:</span> {formatPercent(result.aliquotaEfetivaSimples * 100 / (1 - result.parcelaDeduzir / (result.dasSimples || 1) ))}</div>
+                  <div><span className="text-muted">Nominal:</span> {result.aliquotaNominal ? formatPercent(result.aliquotaNominal * 100) : '—'}</div>
                   <div><span className="text-muted">Efetiva:</span> {formatPercent8(result.aliquotaEfetivaSimples * 100)}</div>
                   <div><span className="text-muted">DAS:</span> {formatCurrency(result.dasSimples || 0)}</div>
                 </div>

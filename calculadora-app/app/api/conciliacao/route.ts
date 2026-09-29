@@ -1,22 +1,47 @@
 import { auth } from '@/lib/auth'
-import { prisma } from '@/lib/db'
+import { prisma, ConcStatus } from '@/lib/db'
 import { NextResponse } from 'next/server'
 
 export async function GET() {
   try {
     const session = await auth()
-    if (!session?.user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+    if (!session?.user) return NextResponse.json({ error: 'Nao autorizado' }, { status: 401 })
 
     const conciliacoes = await prisma.conciliacao.findMany({
       where: { userId: session.user.id },
       orderBy: { dataLancamento: 'desc' },
       take: 100,
-      include: { nota: { select: { id: true, numeroNf: true, valorBruto: true, liquido: true, empresa: { select: { nomeFantasia: true } } } } },
+      include: { 
+        nota: { 
+          select: { 
+            id: true, 
+            numeroNf: true, 
+            serie: true,
+            valorBruto: true, 
+            retencoes: true,
+            emitidaEm: true, 
+            empresa: { select: { nomeFantasia: true, razaoSocial: true } } 
+          } 
+        } 
+      },
     })
 
-    return NextResponse.json(conciliacoes)
+    // Calculate liquido from retencoes for each nota
+    const conciliacoesWithLiquido = conciliacoes.map(c => ({
+      ...c,
+      nota: c.nota ? (
+        {
+          ...c.nota,
+          liquido: c.nota.retencoes && typeof c.nota.retencoes === 'object' && 'liquido' in c.nota.retencoes
+            ? Number(c.nota.retencoes.liquido)
+            : Number(c.nota.valorBruto)
+        }
+      ) : null
+    }))
+
+    return NextResponse.json(conciliacoesWithLiquido)
   } catch (error) {
-    console.error('Erro ao buscar conciliações:', error)
+    console.error('Erro ao buscar conciliacoes:', error)
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
   }
 }
@@ -24,13 +49,13 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const session = await auth()
-    if (!session?.user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+    if (!session?.user) return NextResponse.json({ error: 'Nao autorizado' }, { status: 401 })
 
     const formData = await request.formData()
     const file = formData.get('file') as File
     const contaBancaria = formData.get('contaBancaria') as string
 
-    if (!file) return NextResponse.json({ error: 'Arquivo não enviado' }, { status: 400 })
+    if (!file) return NextResponse.json({ error: 'Arquivo nao enviado' }, { status: 400 })
 
     const text = await file.text()
     const lines = text.split('\n').filter(l => l.trim())
@@ -54,17 +79,21 @@ export async function POST(request: Request) {
     // Auto-match with notas
     const notas = await prisma.nota.findMany({
       where: { empresa: { userId: session.user.id } },
-      select: { id: true, numeroNf: true, valorBruto: true, liquido: true, emitidaEm: true },
+      select: { id: true, numeroNf: true, serie: true, valorBruto: true, retencoes: true, emitidaEm: true },
     })
 
     const results = []
     for (const lanc of lancamentos) {
       let matchedNota = null
-      let status = 'PENDENTE'
+      let status: ConcStatus = 'PENDENTE'
 
-      // Match by valor (liquido or bruto) and date ±2 days
+      // Match by valor (liquido or bruto) and date +-2 days
       for (const nota of notas) {
-        const valorMatch = Math.abs(nota.liquido - lanc.valor) <= 0.01 || 
+        const liquido = nota.retencoes && typeof nota.retencoes === 'object' && 'liquido' in nota.retencoes
+          ? Number(nota.retencoes.liquido)
+          : Number(nota.valorBruto)
+        
+        const valorMatch = Math.abs(liquido - lanc.valor) <= 0.01 || 
                           Math.abs(Number(nota.valorBruto) - lanc.valor) <= 0.01
         const dateMatch = Math.abs(nota.emitidaEm.getTime() - lanc.data.getTime()) <= 2 * 24 * 60 * 60 * 1000
 
@@ -91,7 +120,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ created: results.length, conciliacoes: results })
   } catch (error) {
-    console.error('Erro na conciliação:', error)
+    console.error('Erro na conciliacao:', error)
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
   }
 }

@@ -1,9 +1,0 @@
-{
-  // OpenCode project config using the OpenCode API key directly.
-  "$schema": "https://opencode.ai/config.schema.json",
-  "provider": "openai",
-  "api_key": "${OPENCODE_API_KEY}",
-  "model": "gpt-4o-mini",
-  "temperature": 0.2,
-  "max_tokens": 4096
-}

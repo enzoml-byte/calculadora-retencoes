@@ -1,8 +1,0 @@
-node_modules
-dist
-build
-coverage
-*.db
-*.db-journal
-.env
-.git

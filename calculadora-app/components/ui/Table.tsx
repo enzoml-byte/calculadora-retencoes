@@ -61,9 +61,9 @@ export const TableHead = forwardRef<HTMLTableCellElement, HTMLAttributes<HTMLTab
 
 TableHead.displayName = 'TableHead'
 
-export const TableCell = forwardRef<HTMLTableCellElement, HTMLAttributes<HTMLTableCellElement>>(
-  ({ className, children, ...props }, ref) => (
-    <td ref={ref} className={clsx('px-4 py-3', className)} {...props}>
+export const TableCell = forwardRef<HTMLTableCellElement, HTMLAttributes<HTMLTableCellElement> & { colSpan?: number }>(
+  ({ className, children, colSpan, ...props }, ref) => (
+    <td ref={ref} className={clsx('px-4 py-3', className)} colSpan={colSpan} {...props}>
       {children}
     </td>
   )

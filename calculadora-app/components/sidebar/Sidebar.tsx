@@ -9,25 +9,64 @@ import {
   FileText,
   Calculator,
   CreditCard,
-  Settings,
-  LogOut,
+  BookOpen,
+  FileSpreadsheet,
+  FileCheck,
   ChevronLeft,
   ChevronRight,
+  LogOut,
+  Settings,
 } from 'lucide-react'
 import { signOut, useSession } from 'next-auth/react'
+import { useState } from 'react'
 import { Button } from '@/components/ui'
 
-const navigation = [
-  { name: 'Dashboard', href: '/calculadora', icon: LayoutDashboard },
-  { name: 'Calculadora', href: '/calculadora', icon: Calculator },
-  { name: 'Empresas', href: '/empresas', icon: Building2 },
-  { name: 'Emissão', href: '/emissao', icon: FileText },
-  { name: 'Conciliação', href: '/conciliacao', icon: CreditCard },
+type Module = {
+  id: string
+  name: string
+  icon: React.ReactNode
+  color: string
+  routes: { name: string; href: string; icon: React.ReactNode }[]
+}
+
+const modules: Module[] = [
+  {
+    id: 'fiscal',
+    name: 'Fiscal',
+    icon: <FileText className="h-5 w-5" />,
+    color: 'bg-emerald-500',
+    routes: [
+      { name: 'Calculadora', href: '/fiscal/calculadora', icon: <Calculator className="h-4 w-4" /> },
+      { name: 'Emissão NF', href: '/fiscal/emissao', icon: <FileText className="h-4 w-4" /> },
+      { name: 'Empresas', href: '/fiscal/empresas', icon: <Building2 className="h-4 w-4" /> },
+      { name: 'Conciliação', href: '/fiscal/conciliacao', icon: <CreditCard className="h-4 w-4" /> },
+    ],
+  },
+  {
+    id: 'contabil',
+    name: 'Contábil',
+    icon: <BookOpen className="h-5 w-5" />,
+    color: 'bg-blue-500',
+    routes: [
+      { name: 'Lançamentos', href: '/contabil/lancamentos', icon: <FileSpreadsheet className="h-4 w-4" /> },
+      { name: 'Balancete', href: '/contabil/balancete', icon: <FileCheck className="h-4 w-4" /> },
+      { name: 'DRE', href: '/contabil/dre', icon: <FileSpreadsheet className="h-4 w-4" /> },
+      { name: 'Configurações', href: '/contabil/configuracoes', icon: <Settings className="h-4 w-4" /> },
+    ],
+  },
 ]
 
 export function Sidebar({ collapsed = false, onToggle }: { collapsed?: boolean; onToggle: () => void }) {
   const pathname = usePathname()
   const { data: session } = useSession()
+  const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({
+    fiscal: true,
+    contabil: false,
+  })
+
+  const toggleModule = (moduleId: string) => {
+    setExpandedModules(prev => ({ ...prev, [moduleId]: !prev[moduleId] }))
+  }
 
   return (
     <aside
@@ -40,7 +79,7 @@ export function Sidebar({ collapsed = false, onToggle }: { collapsed?: boolean; 
       <div className="flex h-full flex-col">
         {/* Logo */}
         <div className={clsx('flex items-center justify-between h-16 px-4 border-b border-slate-700', collapsed && 'justify-center')}>
-          <Link href="/calculadora" className="flex items-center gap-2" aria-label="Ir para Calculadora">
+          <Link href="/fiscal/calculadora" className="flex items-center gap-2" aria-label="Ir para Calculadora">
             <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-amber-500">
               <span className="text-white font-bold text-lg">E</span>
             </div>
@@ -60,26 +99,72 @@ export function Sidebar({ collapsed = false, onToggle }: { collapsed?: boolean; 
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 py-4 space-y-1 px-2 overflow-y-auto" aria-label="Menu principal">
-          {navigation.map(item => {
-            const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
+        <nav className="flex-1 py-4 space-y-2 px-2 overflow-y-auto" aria-label="Menu principal">
+          {modules.map(module => {
+            const isModuleActive = pathname.startsWith(`/${module.id}/`)
+            const isExpanded = expandedModules[module.id]
+
             return (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={clsx(
-                  'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors',
-                  isActive
-                    ? 'bg-amber-500/20 text-amber-300'
-                    : 'text-slate-300 hover:bg-slate-800/50 hover:text-white',
-                  collapsed && 'justify-center'
-                )}
-                aria-current={isActive ? 'page' : undefined}
-                title={collapsed ? item.name : undefined}
-              >
-                <item.icon className={clsx('h-5 w-5 flex-shrink-0', isActive && 'text-amber-300')} aria-hidden="true" />
-                {!collapsed && <span className="font-medium">{item.name}</span>}
-              </Link>
+              <div key={module.id} className="space-y-1">
+                {/* Module Header */}
+                <button
+                  onClick={() => toggleModule(module.id)}
+                  className={clsx(
+                    'flex items-center gap-3 w-full px-3 py-2.5 rounded-lg transition-colors text-left',
+                    isModuleActive ? 'bg-amber-500/20 text-amber-300' : 'text-slate-300 hover:bg-slate-800/50 hover:text-white',
+                    collapsed && 'justify-center'
+                  )}
+                  aria-expanded={isExpanded}
+                  aria-controls={`${module.id}-routes`}
+                >
+                  <div className={clsx('flex items-center justify-center w-8 h-8 rounded-lg flex-shrink-0', module.color)} aria-hidden="true">
+                    {module.icon}
+                  </div>
+                  {!collapsed && (
+                    <span className={clsx('font-medium flex-1 truncate', isModuleActive && 'text-amber-300')}>
+                      {module.name}
+                    </span>
+                  )}
+                  {!collapsed && (
+                    <ChevronRight className={clsx('h-4 w-4 flex-shrink-0 transition-transform', isExpanded && 'rotate-90')} />
+                  )}
+                </button>
+
+                {/* Module Routes */}
+                <div
+                  id={`${module.id}-routes`}
+                  className={clsx(
+                    'overflow-hidden transition-all duration-200',
+                    isExpanded ? 'max-h-64 opacity-100' : 'max-h-0 opacity-0'
+                  )}
+                  role="region"
+                  aria-label={`${module.name} routes`}
+                >
+                  <div className="space-y-1 pt-1">
+                    {module.routes.map(item => {
+                      const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
+                      return (
+                        <Link
+                          key={item.name}
+                          href={item.href}
+                          className={clsx(
+                            'flex items-center gap-3 px-6 py-2 rounded-lg transition-colors text-sm',
+                            isActive
+                              ? 'bg-amber-500/20 text-amber-300'
+                              : 'text-slate-300 hover:bg-slate-800/50 hover:text-white',
+                            collapsed && 'justify-center px-3'
+                          )}
+                          aria-current={isActive ? 'page' : undefined}
+                          title={collapsed ? item.name : undefined}
+                        >
+                          <span className="h-4 w-4 flex-shrink-0" aria-hidden="true">{item.icon}</span>
+                          {!collapsed && <span className="font-medium">{item.name}</span>}
+                        </Link>
+                      )
+                    })}
+                  </div>
+                </div>
+              </div>
             )
           })}
         </nav>

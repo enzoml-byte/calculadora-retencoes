@@ -10,7 +10,7 @@ declare module 'next-auth' {
   interface Session {
     user: {
       id: string
-      email: string
+      username: string
       name?: string | null
       role: string
     }
@@ -38,21 +38,21 @@ export const authConfig: NextAuthConfig = {
     Credentials({
       name: 'credentials',
       credentials: {
-        email: { label: 'Email', type: 'email' },
+        username: { label: 'Usuário', type: 'text' },
         password: { label: 'Senha', type: 'password' },
       },
       authorize: async (credentials) => {
         const parsed = loginSchema.safeParse(credentials)
         if (!parsed.success) return null
 
-        const { email, password } = parsed.data
-        const user = await prisma.user.findUnique({ where: { email } })
+        const { username, password } = parsed.data
+        const user = await prisma.user.findUnique({ where: { username } })
         if (!user || !user.passwordHash) return null
 
         const valid = await bcrypt.compare(password, user.passwordHash)
         if (!valid) return null
 
-        return { id: user.id, email: user.email, name: user.name, role: user.role }
+        return { id: user.id, username: user.username, name: user.name, role: user.role }
       },
     }),
   ],

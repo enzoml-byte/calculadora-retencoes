@@ -10,9 +10,10 @@ async function main() {
   const passwordHash = await bcrypt.hash('admin123', 12)
 
   const admin = await prisma.user.upsert({
-    where: { email: 'admin@excellence.com.br' },
+    where: { username: 'admin' },
     update: {},
     create: {
+      username: 'admin',
       email: 'admin@excellence.com.br',
       name: 'Administrador Excellence',
       passwordHash,
@@ -20,15 +21,16 @@ async function main() {
     },
   })
 
-  console.log('✅ Usuário admin criado:', admin.email)
+  console.log('✅ Usuário admin criado:', admin.username)
 
   // Create sample user
   const userPasswordHash = await bcrypt.hash('user123', 12)
 
   const user = await prisma.user.upsert({
-    where: { email: 'user@excellence.com.br' },
+    where: { username: 'user' },
     update: {},
     create: {
+      username: 'user',
       email: 'user@excellence.com.br',
       name: 'Usuário Teste',
       passwordHash: userPasswordHash,
@@ -36,7 +38,7 @@ async function main() {
     },
   })
 
-  console.log('✅ Usuário teste criado:', user.email)
+  console.log('✅ Usuário teste criado:', user.username)
 
   // Create sample empresas for admin
   const empresas = [

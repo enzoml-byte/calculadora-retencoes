@@ -89,11 +89,11 @@ export function Sidebar({ collapsed = false, onToggle }: { collapsed?: boolean; 
           {session?.user && (
             <div className={clsx('flex items-center gap-3', collapsed && 'justify-center')}>
               <div className="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center text-white font-medium">
-                {session.user.name?.charAt(0).toUpperCase() || session.user.email?.charAt(0).toUpperCase()}
+                {session.user.name?.charAt(0).toUpperCase() || session.user.username?.charAt(0).toUpperCase()}
               </div>
               {!collapsed && (
                 <div className="flex-1 min-w-0">
-                  <p className="text-white text-sm font-medium truncate">{session.user.name || session.user.email}</p>
+                  <p className="text-white text-sm font-medium truncate">{session.user.name || session.user.username}</p>
                   <p className="text-slate-400 text-xs truncate capitalize">{session.user.role?.toLowerCase() || 'user'}</p>
                 </div>
               )}

@@ -1,8 +1,8 @@
 {
-  "buildCommand": "echo 'static site'",
-  "outputDirectory": ".",
-  "framework": null,
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/Calculadora.html" }
-  ]
+  "buildCommand": "cd calculadora-app && npm run build",
+  "outputDirectory": "calculadora-app/.next",
+  "framework": "nextjs",
+  "installCommand": "cd calculadora-app && npm install",
+  "devCommand": "cd calculadora-app && npm run dev",
+  "regions": ["gru1"]
 }

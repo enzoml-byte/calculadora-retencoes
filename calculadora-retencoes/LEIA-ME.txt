@@ -1,0 +1,116 @@
+============================================================
+  CALCULADORA DE RETENÇÕES - Guia Rápido (Para Não-Programadores)
+============================================================
+
+O QUE É:
+--------
+Sistema leve para calcular retenções na nota fiscal (ISS, IR, PIS, COFINS, CSLL)
+para empresas dos regimes: Simples Nacional, Lucro Presumido Geral e
+Lucro Presumido Hospitalar. Funciona com duplo-clique, zero instalação.
+
+-----------------------------------------------------------
+COMO USAR (3 PASSOS):
+-----------------------------------------------------------
+
+1. COPIAR A PASTA
+   - Copie a pasta "calculadora-retencoes" para o servidor fixo do escritório.
+   - Assegure-se que todas as máquinas tenham acesso à pasta.
+
+2. EXECUTAR
+   - DUPLO-CLIQUE EM "Iniciar Calculadora.bat"
+   - Ou abra o arquivo "Calculadora.html" diretamente no navegador.
+   - Se for a primeira vez ou se não houver Python, o arquivo abre normalmente
+     mesmo sem servidor (modo file://).
+
+3. PRIMEIRO USO
+   - A tela mostrará a primeira empresa da lista (empresas.json).
+   - Para trocar de empresa, feche e abra o sistema novamente (ou selecione
+     outra no dropdown se adicionado futuramente).
+   - O sistema tentará consultar a BrasilAPI para validar o CNPJ da empresa.
+
+-----------------------------------------------------------
+ETAPAS DO SISTEMA:
+-----------------------------------------------------------
+
+ETAPA 1 - Escolher Empresa
+   - O perfil da empresa é carregado do arquivo empresas.json (compartilhado).
+   - Dados exibidos: razão social, CNPJ, regime, ISS retido, IBS/CBS.
+   - Se CNPJ for inválido ou não encontrado, usa-se dados cadastrais locais.
+
+ETAPA 2 - Digitar Valor
+   - Informe o valor bruto da nota fiscal.
+   - O ISS % já vem definido no perfil da empresa (fixo em 5%).
+   - O sistema calcula automaticamente as retenções federais.
+
+ETAPA 3 - Ver Líquido
+   - São mostrados: IR, PIS, COFINS, CSLL (se houver), Total Federal,
+     ISS Retido e Valor Líquido.
+   - Empresas Simples Nacional: federais zerados, só ISS.
+   - Empresas Presumido Geral: IR 1,5% + PIS/COFINS/CSLL + ISS.
+   - Empresas Presumido Hospitalar: IR 1,2% + PIS/COFINS/CSLL + ISS
+     + aviso de presunção 8%/12% no trimestre.
+
+-----------------------------------------------------------
+REQUISITOS IMPORTANTES:
+-----------------------------------------------------------
+
+* IBS/CBS: Apenas informativo. Para regime normal, deve-se marcar "Sim"
+  para informar IBS/CBS. Se "Não", aparece alerta amarelo: "Atenção:
+  regime normal deve marcar Sim para informar IBS/CBS".
+
+* Dispensa: Se valor bruto < R$215,05 (~4,65% < R$10), avisa "verificar
+  dispensa IN 1234" sem bloquear o cálculo.
+
+* Aviso IBS/CBS: Aparece somente no regime não-Simples com
+  informarIBSCBS = Não.
+
+-----------------------------------------------------------
+PERSISTÊNCIA DE DADOS:
+-----------------------------------------------------------
+
+* O arquivo empresas.json é compartilhado entre todas as máquinas.
+* O navegador usa File System Access API (uma única vez por máquina) para
+  gravar alterações no empresas.json.
+* Fallback: se File System Access não funcionar, usa-se localStorage (por
+  máquina) + botões Exportar/Importar JSON.
+* Nunca use SQLite em pasta de rede (corrompe com 2 usuários simultâneos).
+
+-----------------------------------------------------------
+IMPRESSÃO:
+-----------------------------------------------------------
+
+* Botão "Imprimir Memória de Cálculo" gera impressão formatada com todos
+  os dados da NF e do perfil da empresa.
+* Atalho: Ctrl + P ou Arquivo > Imprimir no navegador.
+
+-----------------------------------------------------------
+SOLUÇÃO DE PROBLEMAS:
+-----------------------------------------------------------
+
+* "Acesso negado" ou não consegue salvar empresas.json:
+  - Feche o navegador e abra novamente (File System Access pede permissão
+    novamente).
+  - Ou use os botões "Exportar JSON" / "Importar JSON" para fazer backup
+    manual.
+
+* CNPJ não encontrado na internet:
+  - O sistema usa dados do próprio empresas.json.
+  - Verifique se o CNPJ tem 14 dígitos (somente números).
+
+* Tela branca ou erros:
+  - Certifique-se de que o arquivo empresas.json está na mesma pasta
+    do HTML.
+  - Use "Iniciar Calculadora.bat" para abrir com servidor local (se houver
+    Python instalado).
+
+-----------------------------------------------------------
+ARQUIVOS DA PASTA:
+-----------------------------------------------------------
+
+Calculadora.html       # App completo (HTML + CSS + JS inline, ~150KB)
+empresas.json          # Cadastro de perfis de empresas
+Iniciar Calculadora.bat # Atalho para executar o sistema
+Criar Atalho.bat       # Cria atalho na Área de Trabalho
+LEIA-ME.txt            # Este arquivo
+
+============================================================

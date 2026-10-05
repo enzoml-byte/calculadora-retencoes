@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora Retenções - Escritório</title>
+<style>
+*{box-sizing:border-box;font-family:Arial,Helvetica,sans-serif}
+body{margin:0;background:#f1f5f9;color:#111}
+header{background:#0f766e;color:#fff;padding:20px;text-align:center}
+header h1{margin:0;font-size:28px}
+header p{margin:4px 0 0;font-size:15px;opacity:.95}
+main{max-width:980px;margin:0 auto;padding:20px}
+.card{background:#fff;border-radius:12px;padding:24px;margin-bottom:20px;box-shadow:0 1px 4px rgba(0,0,0,.12)}
+.card h2{margin:0 0 8px;font-size:24px;color:#0f766e}
+.sub{color:#555;font-size:14px;margin:0 0 20px}
+label{display:block;font-weight:bold;font-size:16px;margin:16px 0 8px}
+input,select,textarea{width:100%;font-size:18px;padding:12px;border:2px solid #cbd5e1;border-radius:8px}
+input:focus,select:focus{border-color:#0f766e;outline:none}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:700px){.row{grid-template-columns:1fr}}
+.btn{display:block;width:100%;font-size:20px;font-weight:bold;padding:16px;margin:12px 0;border:none;border-radius:10px;cursor:pointer}
+.btn-go{background:#0f766e;color:#fff}
+.btn-go:hover{background:#115e59}
+.btn-sec{background:#e2e8f0;color:#111;font-size:16px;padding:10px}
+.btn-danger{background:#fee2e2;color:#b91c1c;font-size:15px;padding:8px;margin-top:6px}
+.btn-small{width:auto;display:inline-block;font-size:15px;padding:8px 14px;margin:6px 6px 0 0}
+.result{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-top:20px}
+.box{background:#f8fafc;border:2px solid #e2e8f0;border-radius:10px;padding:16px;text-align:center}
+.box b{display:block;font-size:14px;color:#475569}
+.box span{font-size:22px;font-weight:bold}
+.box.total{background:#0f766e;color:#fff;border-color:#0f766e}
+.box.total b{color:#ccfbf1}
+.box.liquido{background:#10b981;color:#fff;border-color:#10b981}
+.info{background:#fef3c7;border:2px solid #f59e0b;border-radius:8px;padding:12px;margin:16px 0;color:#92400e}
+.alert{background:#fecaca;border:2px solid #ef4444;border-radius:8px;padding:12px;margin:16px 0;color:#991b1b}
+.selected{color:#0f766e;font-weight:bold}
+</style>
+</head>
+<body>
+<header>
+  <h1>Calculadora Retenções</h1>
+  <p>Escolha uma empresa e digite o valor da NF para conferir as retenções</p>
+</header>
+<main>
+  <div class="card" id="buscaCard">
+    <h2>1 — Escolher empresa</h2>
+    <p class="sub">Selecione uma empresa cadastrada ou digite um CNPJ para buscar os dados oficiais na Receita (BrasilAPI).</p>
+    <label>Empresa cadastrada</label>
+    <select id="selEmpresa"><option value="">— Selecione —</option></select>
+    <div class="row">
+      <div>
+        <label>CNPJ para consulta automática</label>
+        <input id="cnpjInput" placeholder="00.000.000/0000-00" maxlength="18" inputmode="numeric">
+      </div>
+      <div>
+        <label>&nbsp;</label>
+        <button class="btn btn-go" id="btnBuscarCnpj" onclick="buscarCNPJ()">🔍 Buscar CNPJ na Receita</button>
+      </div>
+    </div>
+    <div id="cnpjStatus" class="info" style="display:none"></div>
+  </div>
+
+  <div class="card" id="empresaCard" style="display:none">
+    <h2>Perfil da Empresa</h2>
+    <div class="sub" id="empresaInfo"></div>
+    <label>Razão Social: <span id="razaoSocial" class="selected"></span></label>
+    <label>CNPJ: <span id="cnpjDisplay" class="selected"></span></label>
+    <label>Regime: <span id="regimeDisplay" class="selected"></span></label>
+    <label>ISS Retido: <span id="issDisplay" class="selected"></span></label>
+    <label>Informar IBS/CBS: <span id="ibsDisplay" class="selected"></span></label>
+  </div>
+
+  <div class="card" style="display:none" id="calcCard">
+    <h2>2 — Digitar valor &nbsp;·&nbsp; 3 — Ver líquido</h2>
+    <div class="sub">Valor bruto da NF: <span id="valorBruto">0,00</span></div>
+    
+    <div class="row">
+      <div>
+        <label>Valor Bruto (R$)</label>
+        <input type="text" id="valorInput" inputmode="decimal" placeholder="10.000,00" value="10.000,00">
+      </div>
+      <div>
+        <label>ISS retido pelo tomador?</label>
+        <select id="issRetidoSel"><option value="S">Sim — retido (5%)</option><option value="N">Não — recolhido pelo prestador</option></select>
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label>ISS % (do perfil)</label>
+        <input type="number" id="issPercentual" step="0.01" value="5.00" readonly>
+      </div>
+      <div>
+        <label>&nbsp;</label>
+        <button class="btn btn-go" onclick="processarNF()">▷ CALCULAR RETENÇÕES</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="resultCard" style="display:none">
+    <h2>Resultado</h2>
+    <div class="result">
+      <div class="box IR">
+        <b>IR Retido</b>
+        <span id="irValue">0,00</span>
+      </div>
+      <div class="box PIS">
+        <b>PIS</b>
+        <span id="pisValue">0,00</span>
+      </div>
+      <div class="box COFINS">
+        <b>COFINS</b>
+        <span id="cofinsValue">0,00</span>
+      </div>
+      <div class="box CSLL">
+        <b>CSLL</b>
+        <span id="csllValue">0,00</span>
+      </div>
+      <div class="box total">
+        <b>Total Federal</b>
+        <span id="totalFederal">0,00</span>
+      </div>
+      <div class="box ISS">
+        <b>ISS Retido</b>
+        <span id="issValue">0,00</span>
+      </div>
+      <div class="box liquido">
+        <b>Líquido</b>
+        <span id="liquidoValue">0,00</span>
+      </div>
+    </div>
+    
+    <div id="ibsAlert" class="alert" style="display:none">
+      <b>Atenção IBS/CBS:</b> Este campo é informativo. Para regime normal, informe IBS/CBS = Sim.
+    </div>
+    
+    <button class="btn btn-danger" onclick="imprimirMemoria()">Imprimir Memória de Cálculo</button>
+    <button class="btn btn-sec" onclick="novaNF()">Nova NF</button>
+  </div>
+</main>
+
+<script>
+let empresas = [];
+let empresaAtual = null;
+let regimeAtual = '';
+
+document.addEventListener('DOMContentLoaded', async function() {
+  const sel=document.getElementById('selEmpresa');
+  if(sel)sel.addEventListener('change', onSelectEmpresa);
+  const ci=document.getElementById('cnpjInput');
+  if(ci){
+    ci.addEventListener('blur', function(){ if(this.value.replace(/\D/g,'').length===14)buscarCNPJ(); });
+    ci.addEventListener('keydown', function(e){ if(e.key==='Enter'){e.preventDefault();buscarCNPJ();} });
+  }
+  const vi=document.getElementById('valorInput');
+  if(vi)vi.addEventListener('keydown', function(e){ if(e.key==='Enter'){e.preventDefault();processarNF();} });
+  try {
+    const response = await fetch('./empresas.json');
+    empresas = await response.json();
+    carregarEmpresas();
+  } catch (erro) {
+    console.error('Erro ao carregar empresas:', erro);
+    empresas=[
+      {id:'ex1', nome:'Exemplo Simples', cnpj:'11222333000181', regime:'simples', issRetido:'perguntar', informaIBSCBS:'N', aliquotaDas:'6.00', faturamento12m:'180000', obs:''},
+      {id:'ex2', nome:'Exemplo Presumido Geral', cnpj:'04252011000110', regime:'presumido_geral', issRetido:'sempre', informaIBSCBS:'S', aliquotaDas:'', faturamento12m:'', obs:''}
+    ];
+    carregarEmpresas();
+    mostrarErro('empresas.json não encontrado — usando exemplos embutidos.');
+  }
+});
+
+function mostrarTela(id){
+  ['empresaCard','calcCard','resultCard'].forEach(k=>{
+    const el=document.getElementById(k);
+    if(el)el.style.display=(k===id)?'block':'none';
+  });
+  const busca=document.getElementById('buscaCard');
+  if(busca)busca.style.display='block';
+}
+
+function setCnpjStatus(html, isErr){
+  const box=document.getElementById('cnpjStatus');
+  if(!box)return;
+  if(!html){box.style.display='none';box.innerHTML='';return;}
+  box.style.display='block';
+  box.className=isErr?'alert':'info';
+  box.innerHTML=html;
+}
+
+function carregarEmpresas() {
+  const sel=document.getElementById('selEmpresa');
+  if(sel){
+    sel.innerHTML='<option value="">— Selecione —</option>';
+    empresas.forEach(e=>{
+      const o=document.createElement('option');
+      o.value=e.id;
+      o.textContent=(e.nome||e.razaoSocial||'Empresa')+' — '+formatarRegime(e.regime);
+      sel.appendChild(o);
+    });
+  }
+  if (empresas.length === 0) {
+    mostrarErro('Nenhuma empresa cadastrada em empresas.json');
+    return;
+  }
+  
+  empresaAtual = empresas[0];
+  regimeAtual = empresaAtual.regime;
+  if(sel)sel.value=empresaAtual.id;
+  exibirEmpresa(empresaAtual);
+  mostrarTela('calcCard');
+}
+
+function onSelectEmpresa(){
+  const sel=document.getElementById('selEmpresa');
+  if(!sel||!sel.value)return;
+  const e=empresas.find(x=>String(x.id)===String(sel.value));
+  if(!e)return;
+  empresaAtual=e;
+  regimeAtual=e.regime;
+  setCnpjStatus('');
+  exibirEmpresa(e);
+  mostrarTela('calcCard');
+}
+
+function exibirEmpresa(emp) {
+  if(!emp)return;
+  document.getElementById('empresaInfo').innerHTML = emp.cnaeFiscal?('CNAE '+emp.cnaeFiscal+(emp.anexoSugerido?' • Anexo '+emp.anexoSugerido+' sugerido':'')):'';
+  document.getElementById('razaoSocial').textContent = emp.nome||emp.razaoSocial||'—';
+  document.getElementById('cnpjDisplay').textContent = formatarCNPJ(emp.cnpj||'');
+  document.getElementById('regimeDisplay').textContent = formatarRegime(emp.regime);
+  document.getElementById('issDisplay').textContent = emp.issRetido||'sempre';
+  document.getElementById('ibsDisplay').textContent = emp.informaIBSCBS === 'S' ? 'Sim' : 'Não';
+  
+  const ibsAlert = document.getElementById('ibsAlert');
+  if (emp.regime !== 'simples' && emp.informaIBSCBS === 'N') {
+    ibsAlert.style.display = 'block';
+  } else {
+    ibsAlert.style.display = 'none';
+  }
+  
+  document.getElementById('issPercentual').value = emp.aliquotaDas || '5.00';
+  const issSel=document.getElementById('issRetidoSel');
+  if(issSel){
+    if(emp.issRetido==='nunca')issSel.value='N';
+    else if(emp.issRetido==='sempre')issSel.value='S';
+  }
+  
+  document.getElementById('empresaCard').style.display = 'block';
+  document.getElementById('calcCard').style.display = 'block';
+  document.getElementById('resultCard').style.display = 'none';
+}
+
+function formatarCNPJ(cnpj) {
+  const clean = String(cnpj||'').replace(/\D/g, '');
+  if (clean.length !== 14) return cnpj;
+  return clean.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
+}
+
+function formatarRegime(regime) {
+  const regimes = {
+    'simples': 'Simples Nacional',
+    'presumido_geral': 'Lucro Presumido Geral',
+    'presumido_hospitalar': 'Lucro Presumido Hospitalar'
+  };
+  return regimes[regime] || regime;
+}
+
+async function buscarCNPJ(){
+  const raw=(document.getElementById('cnpjInput').value||'');
+  const clean=raw.replace(/\D/g,'');
+  if(clean.length!==14){setCnpjStatus('⚠️ CNPJ deve ter 14 dígitos.', true);return;}
+  const btn=document.getElementById('btnBuscarCnpj');
+  if(btn){btn.disabled=true;btn.textContent='⏳ Consultando...';}
+  setCnpjStatus('⏳ Consultando CNPJ na Receita (BrasilAPI)...');
+  try{
+    const response=await fetch('https://brasilapi.com.br/api/cnpj/v1/'+clean);
+    if(response.status===404){setCnpjStatus('❌ CNPJ não encontrado na base da Receita. Confira o número.', true);return;}
+    if(!response.ok)throw new Error('Erro na consulta: '+response.status);
+    const data=await response.json();
+    const cnae=String(data.cnae_fiscal||'');
+    const anexoSugerido=identificarAnexoPorCNAE(cnae);
+    const nome=data.razao_social||('Empresa '+clean);
+    const sit=data.descricao_situacao_cadastral||'';
+    let found=empresas.find(e=>(e.cnpj||'').replace(/\D/g,'')===clean);
+    if(!found){
+      found={id:'cnpj'+clean, nome:nome, cnpj:clean, regime:'presumido_geral', issRetido:'sempre', informaIBSCBS:'S', aliquotaDas:'', faturamento12m:'', obs:'Importado via BrasilAPI'};
+      empresas.push(found);
+      const sel=document.getElementById('selEmpresa');
+      if(sel){const o=document.createElement('option');o.value=found.id;o.textContent=nome+' — '+formatarRegime(found.regime);sel.appendChild(o);sel.value=found.id;}
+    }else{
+      found.nome=nome;
+      const sel=document.getElementById('selEmpresa');
+      if(sel)sel.value=found.id;
+    }
+    empresaAtual={...found, nome:nome, cnpj:clean, cnaeFiscal:cnae, anexoSugerido:anexoSugerido};
+    regimeAtual=empresaAtual.regime;
+    exibirEmpresa(empresaAtual);
+    mostrarTela('calcCard');
+    let msg='✅ <b>'+nome+'</b>'+(data.nome_fantasia&&data.nome_fantasia!==nome?' • '+data.nome_fantasia:'')+((data.municipio||data.uf)?' • '+[data.municipio,data.uf].filter(Boolean).join('/'):'')+'<br>CNAE '+cnae+' — '+(data.cnae_fiscal_descricao||'')+' • Situação: '+(sit||'—');
+    if(anexoSugerido)msg+=' • Anexo '+anexoSugerido+' sugerido.';
+    else msg+=' • ⚠️ CNAE fora dos Anexos III/IV/V.';
+    setCnpjStatus(msg);
+    mostrarSucesso('CNPJ consultado com sucesso! Dados da empresa carregados.');
+  }catch(erro){
+    console.error('Erro ao consultar CNPJ:',erro);
+    setCnpjStatus('❌ Não foi possível consultar o CNPJ. Verifique a internet. Você pode usar o cadastro local.', true);
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='🔍 Buscar CNPJ na Receita';}
+  }
+}
+
+async function consultarCNPJ(cnpjDigitado) {
+  document.getElementById('cnpjInput').value=cnpjDigitado||'';
+  return buscarCNPJ();
+}
+
+function identificarAnexoPorCNAE(cnae) {
+  const prefix = String(cnae||'').replace(/\D/g,'').substring(0, 4);
+  const anexoIII = ['6201','6202','6203','6204','6209','6910','6920','7020','7110','7120','7210','7310','7410','7420','7490','8010','8020','8030','8510','8520','8530','8540','8550','8590','8610','8620','8630','8640','8650','8660','8690','8710','8720','8730','8790','8810','8890','9000','9100','9200','9310','9320','9410','9420','9490','9510','9520','9600'];
+  const anexoIV = ['4321','4322','4329','4330','4390','6910','8121','8129','8130'];
+  const anexoV = ['6910','7110','7120','7210','7310','7410','7420','7490','8610','8620','8630','8640','8650','8660','8690','8710','8720','8730','8790','8810','8890'];
+  
+  if (anexoIV.includes(prefix)) return 'IV';
+  if (anexoV.includes(prefix)) return 'V';
+  if (anexoIII.includes(prefix)) return 'III';
+  return undefined;
+}
+
+function formatoMoeda(valor) {
+  return Number(valor).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+}
+
+function parseBR(v){if(typeof v!=='string')v=String(v??'');v=v.replace(/[R$\s]/g,'').replace(/\./g,'').replace(',','.');const n=parseFloat(v);return isNaN(n)?0:n;}
+
+function calcularRetenções(valorBruto, regime, issRetidoFlag) {
+  const issPercentual = 5.0;
+  const consideraISS = issRetidoFlag !== false;
+  
+  let ir = 0, pis = 0, cofins = 0, csll = 0;
+  
+  switch(regime) {
+    case 'simples':
+      ir = 0;
+      pis = 0;
+      cofins = 0;
+      csll = 0;
+      break;
+      
+    case 'presumido_geral':
+      ir = valorBruto * 0.015;
+      pis = valorBruto * 0.0065;
+      cofins = valorBruto * 0.03;
+      csll = valorBruto * 0.01;
+      break;
+      
+    case 'presumido_hospitalar':
+      ir = valorBruto * 0.012;
+      pis = valorBruto * 0.0065;
+      cofins = valorBruto * 0.03;
+      csll = valorBruto * 0.01;
+      break;
+  }
+  
+  const totalFederal = ir + pis + cofins + csll;
+  const issRetido = consideraISS ? valorBruto * (issPercentual / 100) : 0;
+  const liquido = valorBruto - totalFederal - issRetido;
+  
+  return {
+    ir: ir,
+    pis: pis,
+    cofins: cofins,
+    csll: csll,
+    totalFederal,
+    iss: issRetido,
+    liquido
+  };
+}
+
+function processarNF() {
+  const raw=(document.getElementById('valorInput').value||'');
+  const valorBruto = parseBR(raw);
+  
+  if (isNaN(valorBruto) || valorBruto <= 0) {
+    mostrarErro('Digite um valor bruto válido maior que zero');
+    return;
+  }
+  
+  if (!empresaAtual) {
+    mostrarErro('Selecione uma empresa primeiro');
+    return;
+  }
+
+  const issSel=document.getElementById('issRetidoSel');
+  const issRet=(issSel?issSel.value:'S')==='S';
+  
+  const resultado = calcularRetenções(valorBruto, empresaAtual.regime, issRet);
+  
+  document.getElementById('irValue').textContent = formatoMoeda(resultado.ir);
+  document.getElementById('pisValue').textContent = formatoMoeda(resultado.pis);
+  document.getElementById('cofinsValue').textContent = formatoMoeda(resultado.cofins);
+  document.getElementById('csllValue').textContent = formatoMoeda(resultado.csll);
+  document.getElementById('totalFederal').textContent = formatoMoeda(resultado.totalFederal);
+  document.getElementById('issValue').textContent = formatoMoeda(resultado.iss);
+  document.getElementById('liquidoValue').textContent = formatoMoeda(resultado.liquido);
+  
+  const ibsAlert = document.getElementById('ibsAlert');
+  if (empresaAtual.regime !== 'simples' && empresaAtual.informaIBSCBS === 'N') {
+    ibsAlert.style.display = 'block';
+  } else {
+    ibsAlert.style.display = 'none';
+  }
+  
+  document.getElementById('empresaCard').style.display = 'block';
+  document.getElementById('calcCard').style.display = 'block';
+  document.getElementById('resultCard').style.display = 'block';
+  document.getElementById('resultCard').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function novaNF() {
+  document.getElementById('valorInput').value = '';
+  document.getElementById('empresaCard').style.display = 'block';
+  document.getElementById('calcCard').style.display = 'block';
+  document.getElementById('resultCard').style.display = 'none';
+}
+
+function mostrarSucesso(msg) {
+  const div = document.createElement('div');
+  div.style.position = 'fixed';
+  div.style.bottom = '20px';
+  div.style.right = '20px';
+  div.style.background = '#10b981';
+  div.style.color = 'white';
+  div.style.padding = '12px 20px';
+  div.style.borderRadius = '8px';
+  div.style.boxShadow = '0 2px 8px rgba(0,0,0,.15)';
+  div.style.zIndex = '1000';
+  div.textContent = msg;
+  document.body.appendChild(div);
+  setTimeout(() => div.remove(), 5000);
+}
+
+function mostrarErro(msg) {
+  const div = document.createElement('div');
+  div.style.position = 'fixed';
+  div.style.bottom = '20px';
+  div.style.right = '20px';
+  div.style.background = '#fecaca';
+  div.style.color = '#991b1b';
+  div.style.padding = '12px 20px';
+  div.style.borderRadius = '8px';
+  div.style.boxShadow = '0 2px 8px rgba(0,0,0,.15)';
+  div.style.zIndex = '1000';
+  div.style.border = '2px solid #ef4444';
+  div.textContent = msg;
+  document.body.appendChild(div);
+  setTimeout(() => div.remove(), 5000);
+}
+
+function imprimirMemoria() {
+  window.print();
+}
+</script>
+</body>
+</html>

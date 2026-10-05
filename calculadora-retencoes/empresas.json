@@ -1,0 +1,35 @@
+[
+  {
+    "id": "ex1",
+    "nome": "Exemplo Simples - Padaria Pão Bom",
+    "cnpj": "11222333000181",
+    "regime": "simples",
+    "issRetido": "perguntar",
+    "informaIBSCBS": "N",
+    "aliquotaDas": "6.00",
+    "faturamento12m": "180000",
+    "obs": "Simples Anexo III - nao retem federais"
+  },
+  {
+    "id": "ex2",
+    "nome": "Exemplo Presumido Geral - Consultoria Alfa",
+    "cnpj": "04252011000110",
+    "regime": "presumido_geral",
+    "issRetido": "sempre",
+    "informaIBSCBS": "S",
+    "aliquotaDas": "",
+    "faturamento12m": "",
+    "obs": "IR 1,5% + PIS/COFINS/CSLL + ISS 5%"
+  },
+  {
+    "id": "ex3",
+    "nome": "Exemplo Hospitalar - Clinica Vida",
+    "cnpj": "11024591000173",
+    "regime": "presumido_hospitalar",
+    "issRetido": "sempre",
+    "informaIBSCBS": "S",
+    "aliquotaDas": "",
+    "faturamento12m": "",
+    "obs": "Equipajada - IR 1,2% + presuncao 8%/12%"
+  }
+]

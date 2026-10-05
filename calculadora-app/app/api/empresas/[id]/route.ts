@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { empresaUpdateSchema } from '@/lib/validators'
 import { NextResponse } from 'next/server'
+import { Prisma } from '@prisma/client'
 import { lookupCNPJ } from '@/lib/cnpj'
 
 interface RouteParams {
@@ -83,6 +84,9 @@ export async function PUT(request: Request, { params }: RouteParams) {
     return NextResponse.json(updated)
   } catch (error) {
     console.error('Erro ao atualizar empresa:', error)
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      return NextResponse.json({ error: 'CNPJ já cadastrado no sistema' }, { status: 400 })
+    }
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
   }
 }

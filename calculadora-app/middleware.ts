@@ -5,10 +5,8 @@ import type { NextRequest } from 'next/server'
 
 export const config = {
   matcher: [
-    '/calculadora/:path*',
-    '/empresas/:path*',
-    '/emissao/:path*',
-    '/conciliacao/:path*',
+    '/fiscal/:path*',
+    '/contabil/:path*',
     '/dashboard/:path*',
     '/api/empresas/:path*',
     '/api/notas/:path*',

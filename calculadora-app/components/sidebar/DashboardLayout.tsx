@@ -39,10 +39,11 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
 function getPageTitle(): string {
   if (typeof window === 'undefined') return 'Dashboard'
   const path = window.location.pathname
-  if (path === '/calculadora') return 'Calculadora de Retenções'
-  if (path.startsWith('/empresas')) return 'Empresas'
-  if (path.startsWith('/emissao')) return 'Emissão de Notas'
-  if (path.startsWith('/conciliacao')) return 'Conciliação Bancária'
+  if (path === '/fiscal/calculadora') return 'Calculadora de Retenções'
+  if (path.startsWith('/fiscal/empresas') || path.startsWith('/contabil/empresas')) return 'Empresas'
+  if (path.startsWith('/fiscal/emissao')) return 'Emissão de Notas'
+  if (path.startsWith('/fiscal/conciliacao')) return 'Conciliação Bancária'
+  if (path.startsWith('/contabil/')) return 'Módulo Contábil'
   return 'Dashboard'
 }
 

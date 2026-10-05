@@ -3,9 +3,11 @@
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { Button, Input, Select, Card, CardContent, CardHeader, CardTitle, Badge, Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui'
-import { Calculator, Building2, Download, Upload, RefreshCw, AlertTriangle, Info, FileText, Copy } from 'lucide-react'
+import { Calculator, Building2, Download, Upload, RefreshCw, AlertTriangle, Info, FileText, Copy, X } from 'lucide-react'
 import { calculateRetencao, formatCurrency, formatPercent, formatPercent8, parseBR, validateCNPJ } from '@/lib/calculations'
 import { empresaCreateSchema } from '@/lib/validators'
+import { CnpjField } from '@/components/cnpj/CnpjField'
+import type { CNPJData } from '@/lib/cnpj'
 
 type Empresa = {
   id: string
@@ -49,15 +51,26 @@ export default function CalculadoraPage() {
   const [result, setResult] = useState<RetencaoResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [showEmpresaModal, setShowEmpresaModal] = useState(false)
-  const [empresaForm, setEmpresaForm] = useState({
+  const [empresaForm, setEmpresaForm] = useState<{
+    razaoSocial: string
+    nomeFantasia: string
+    cnpj: string
+    regime: 'SIMPLES' | 'PRESUMIDO_GERAL' | 'PRESUMIDO_HOSPITALAR'
+    anexo: 'III' | 'IV' | 'V'
+    rbt12: string
+    issRetido: 'SEMPRE' | 'NUNCA' | 'PERGUNTAR'
+    informaIbsCbs: boolean
+  }>({
     razaoSocial: '',
+    nomeFantasia: '',
     cnpj: '',
-    regime: 'PRESUMIDO_GERAL' as const,
-    anexo: 'III' as const,
+    regime: 'PRESUMIDO_GERAL',
+    anexo: 'III',
     rbt12: '',
-    issRetido: 'SEMPRE' as const,
+    issRetido: 'SEMPRE',
     informaIbsCbs: true,
   })
+  const [cnpjInfo, setCnpjInfo] = useState<CNPJData | null>(null)
   const [empresaError, setEmpresaError] = useState<Record<string, string>>({})
 
   // Fetch empresas on mount
@@ -155,8 +168,10 @@ export default function CalculadoraPage() {
 
       await fetch('/api/empresas').then(r => r.json()).then(data => setEmpresas(data))
       setShowEmpresaModal(false)
+      setCnpjInfo(null)
       setEmpresaForm({
         razaoSocial: '',
+        nomeFantasia: '',
         cnpj: '',
         regime: 'PRESUMIDO_GERAL',
         anexo: 'III',
@@ -411,6 +426,84 @@ export default function CalculadoraPage() {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {showEmpresaModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true">
+          <div className="w-full max-w-lg bg-white rounded-xl shadow-xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h2 className="text-lg font-bold">Nova Empresa — consulta automática</h2>
+              <Button variant="ghost" size="sm" onClick={() => { setShowEmpresaModal(false); setCnpjInfo(null) }} aria-label="Fechar">
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <form onSubmit={handleCreateEmpresa} className="p-4 space-y-4">
+              <CnpjField
+                value={empresaForm.cnpj}
+                onChange={v => setEmpresaForm(prev => ({ ...prev, cnpj: v }))}
+                onFound={data => {
+                  setCnpjInfo(data)
+                  setEmpresaForm(prev => ({
+                    ...prev,
+                    cnpj: data.cnpj.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5'),
+                    razaoSocial: data.razaoSocial || prev.razaoSocial,
+                    nomeFantasia: data.nomeFantasia || prev.nomeFantasia,
+                    anexo: (data.anexoSugerido as 'III' | 'IV' | 'V') || prev.anexo,
+                  }))
+                }}
+                error={empresaError.cnpj}
+              />
+              <Input
+                label="Razão Social *"
+                value={empresaForm.razaoSocial}
+                onChange={e => setEmpresaForm(prev => ({ ...prev, razaoSocial: e.target.value }))}
+                error={empresaError.razaoSocial}
+                placeholder="Preenchida automaticamente pela Receita"
+              />
+              <Input
+                label="Nome Fantasia"
+                value={empresaForm.nomeFantasia}
+                onChange={e => setEmpresaForm(prev => ({ ...prev, nomeFantasia: e.target.value }))}
+                placeholder="Preenchido automaticamente (editável)"
+              />
+              {cnpjInfo && (
+                <div className="text-xs bg-slate-50 border rounded-lg p-2">
+                  {cnpjInfo.razaoSocial} • {cnpjInfo.municipio}/{cnpjInfo.uf} • CNAE {cnpjInfo.cnaeFiscal}
+                </div>
+              )}
+              <div className="grid grid-cols-2 gap-3">
+                <Select
+                  label="Regime"
+                  value={empresaForm.regime}
+                  onChange={e => setEmpresaForm(prev => ({ ...prev, regime: e.target.value as 'SIMPLES' | 'PRESUMIDO_GERAL' | 'PRESUMIDO_HOSPITALAR' }))}
+                  options={[
+                    { value: 'SIMPLES', label: 'Simples Nacional' },
+                    { value: 'PRESUMIDO_GERAL', label: 'Lucro Presumido Geral' },
+                    { value: 'PRESUMIDO_HOSPITALAR', label: 'Lucro Presumido Hospitalar' },
+                  ]}
+                />
+                <Select
+                  label="Anexo"
+                  value={empresaForm.anexo}
+                  onChange={e => setEmpresaForm(prev => ({ ...prev, anexo: e.target.value as 'III' | 'IV' | 'V' }))}
+                  options={[
+                    { value: 'III', label: 'Anexo III' },
+                    { value: 'IV', label: 'Anexo IV' },
+                    { value: 'V', label: 'Anexo V' },
+                  ]}
+                />
+              </div>
+              <div className="flex gap-2 pt-2">
+                <Button type="button" variant="outline" onClick={() => { setShowEmpresaModal(false); setCnpjInfo(null) }} className="flex-1">
+                  Cancelar
+                </Button>
+                <Button type="submit" className="flex-1">
+                  Cadastrar
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   )

@@ -77,14 +77,12 @@ export const authConfig: NextAuthConfig = {
     authorized: async ({ auth, request: { nextUrl } }) => {
       const isLoggedIn = !!auth?.user
       const isOnDashboard = nextUrl.pathname.startsWith('/dashboard') || 
-                            nextUrl.pathname.startsWith('/calculadora') ||
-                            nextUrl.pathname.startsWith('/empresas') ||
-                            nextUrl.pathname.startsWith('/emissao') ||
-                            nextUrl.pathname.startsWith('/conciliacao')
+                            nextUrl.pathname.startsWith('/fiscal/') ||
+                            nextUrl.pathname.startsWith('/contabil/')
       const isAuthRoute = nextUrl.pathname.startsWith('/login')
 
       if (isAuthRoute && isLoggedIn) {
-        return Response.redirect(new URL('/calculadora', nextUrl))
+        return Response.redirect(new URL('/fiscal/calculadora', nextUrl))
       }
 
       if (isOnDashboard && !isLoggedIn) {

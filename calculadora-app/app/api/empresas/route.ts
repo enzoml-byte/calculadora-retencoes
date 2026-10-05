@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { empresaCreateSchema, empresaUpdateSchema } from '@/lib/validators'
 import { NextResponse } from 'next/server'
+import { Prisma } from '@prisma/client'
 import { lookupCNPJ } from '@/lib/cnpj'
 
 export async function GET() {
@@ -70,6 +71,10 @@ export async function POST(request: Request) {
     return NextResponse.json(empresa, { status: 201 })
   } catch (error) {
     console.error('Erro ao criar empresa:', error)
+    // CNPJ é único global no banco: outro usuário pode já tê-lo cadastrado
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      return NextResponse.json({ error: 'CNPJ já cadastrado no sistema' }, { status: 400 })
+    }
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
   }
 }

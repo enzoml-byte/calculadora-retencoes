@@ -195,8 +195,12 @@ hr.sep{border:none;border-top:2px solid var(--line);margin:16px 0}
 <input type="hidden" id="editId">
 <label>Nome / Razão Social *</label>
 <input id="fNome" placeholder="Ex: Excellence Soluções Digitais LTDA">
-<label>CNPJ</label>
-<input id="fCnpj" placeholder="00.000.000/0000-00" maxlength="18">
+<label>CNPJ — digite e os dados da Receita preenchem sozinhos</label>
+<div style="display:flex;gap:8px">
+<input id="fCnpj" placeholder="00.000.000/0000-00" maxlength="18" style="flex:1">
+<button type="button" class="btn-sec" id="btnCnpj" onclick="consultarCNPJCadastro()" style="white-space:nowrap">🔍 Consultar CNPJ</button>
+</div>
+<div id="cnpjStatus" class="info" style="display:none"></div>
 <div class="row">
 <div><label>Regime Tributário *</label>
 <select id="fRegime"><option value="simples">Simples Nacional</option><option value="presumido_geral">Lucro Presumido Geral (IR 1,5%)</option><option value="presumido_hospitalar">Presumido Hospitalar (IR 1,2%)</option></select></div>
@@ -424,6 +428,35 @@ mem.innerHTML='<b>Memória de cálculo — '+esc(nomeEmp)+'</b><br>Data: '+new D
 }
 
 /* ===== ABA 2: CADASTRO ===== */
+function anexoPorCNAE(cnae){const p=String(cnae||'').replace(/\D/g,'').substring(0,4);if(!p)return undefined;const iv=['4321','4322','4329','4330','4390','6910','8121','8129','8130'];const v=['6910','7110','7120','7210','7310','7410','7420','7490','8610','8620','8630','8640','8650','8660','8690','8710','8720','8730','8790','8810','8890'];const iii=['6201','6202','6203','6204','6209','6910','6920','7020','7110','7120','7210','7310','7410','7420','7490','8010','8020','8030','8510','8520','8530','8540','8550','8590','8610','8620','8630','8640','8650','8660','8690','8710','8720','8730','8790','8810','8890','9000','9100','9200','9310','9320','9410','9420','9490','9510','9520','9600'];if(iv.includes(p))return 'IV';if(v.includes(p))return 'V';if(iii.includes(p))return 'III';return undefined;}
+function setCnpjStatus(html, kind){const box=document.getElementById('cnpjStatus');if(!box)return;if(!html){box.style.display='none';box.innerHTML='';return;}box.style.display='block';box.className=kind==='err'?'alert':kind==='warn'?'alert':'info';box.innerHTML=html;}
+async function consultarCNPJCadastro(){
+const raw=document.getElementById('fCnpj').value||'';const clean=soNumeros(raw);
+if(clean.length!==14){setCnpjStatus('⚠️ CNPJ deve ter 14 dígitos.','err');return;}
+if(window._lastCnpjLookup===clean&&document.getElementById('fNome').value.trim())return;
+window._lastCnpjLookup=clean;
+const btn=document.getElementById('btnCnpj');if(btn){btn.disabled=true;btn.textContent='⏳ Consultando...';}
+setCnpjStatus('⏳ Consultando CNPJ na Receita (BrasilAPI)...');
+try{
+const r=await fetch('https://brasilapi.com.br/api/cnpj/v1/'+clean);
+if(r.status===404){setCnpjStatus('❌ CNPJ não encontrado na base da Receita. Confira o número.','err');return;}
+if(!r.ok)throw new Error('HTTP '+r.status);
+const d=await r.json();
+const razao=d.razao_social||'';const fantasia=d.nome_fantasia||'';
+if(razao&&!document.getElementById('fNome').value.trim())document.getElementById('fNome').value=razao;
+const cnae=String(d.cnae_fiscal||'');const sug=anexoPorCNAE(cnae);
+if(sug&&['I','II','III','IV','V'].includes(sug))document.getElementById('fAnexo').value=sug;
+if(d.opcao_pelo_simples)document.getElementById('fRegime').value='simples';
+const sit=d.descricao_situacao_cadastral||d.situacao_cadastral||'—';
+const loc=[d.municipio,d.uf].filter(Boolean).join('/');
+let msg='✅ <b>'+esc(razao||'Empresa localizada')+'</b>'+(fantasia&&fantasia!==razao?' • Fantasia: '+esc(fantasia):'')+(loc?' • '+esc(loc):'')+'<br>CNAE '+esc(cnae)+' — '+esc(d.cnae_fiscal_descricao||'')+' • Situação: '+esc(String(sit));
+if(sug)msg+=' • <b>Anexo '+sug+' sugerido e aplicado.</b>';else msg+=' • ⚠️ CNAE fora dos Anexos III/IV/V — confira se é prestadora de serviços.';
+if(String(sit).toUpperCase()!=='ATIVA')msg+='<br>⚠️ Atenção: situação cadastral diferente de ATIVA.';
+if(d.opcao_pelo_simples)msg+='<br>ℹ️ Optante pelo Simples segundo a Receita — regime ajustado para Simples.';
+setCnpjStatus(msg);
+}catch(err){console.warn('CNPJ lookup falhou:',err);setCnpjStatus('❌ Não foi possível consultar o CNPJ. Verifique a internet e tente de novo. Você pode salvar manualmente.','err');}
+finally{if(btn){btn.disabled=false;btn.textContent='🔍 Consultar CNPJ';}}
+}
 function renderTabelaCadastro(){
 const tb=document.getElementById('tbEmpresas');tb.innerHTML='';
 empresas.forEach(e=>{const tr=document.createElement('tr');
@@ -448,7 +481,7 @@ document.getElementById('statusSave').textContent='✅ Empresa salva e sincroniz
 }
 function editar(id){const e=empresas.find(x=>x.id===id);if(!e)return;document.getElementById('editId').value=e.id;document.getElementById('fNome').value=e.nome;document.getElementById('fCnpj').value=e.cnpj||'';document.getElementById('fRegime').value=e.regime;document.getElementById('fAnexo').value=e.anexo||'III';document.getElementById('fRBT12').value=e.rbt12||'';document.getElementById('fIss').value=e.issRetido||'sempre';document.getElementById('fIBS').value=e.informaIBSCBS||'S';document.getElementById('fObs').value=e.obs||'';window.scrollTo(0,document.body.scrollHeight);}
 async function excluir(id){if(!confirm('Excluir esta empresa?'))return;try{await apiDelete(id);empresas=empresas.filter(x=>x.id!==id);persistLocal();renderEmpresaDropdown();renderTabelaCadastro();document.getElementById('statusSave').textContent='✅ Empresa excluída e sincronizada.';}catch(err){alert('Erro ao excluir no backend: '+err.message);}}
-function limparForm(){document.getElementById('editId').value='';['fNome','fCnpj','fRBT12','fObs'].forEach(k=>document.getElementById(k).value='');}
+function limparForm(){document.getElementById('editId').value='';['fNome','fCnpj','fRBT12','fObs'].forEach(k=>document.getElementById(k).value='');window._lastCnpjLookup='';setCnpjStatus('');}
 async function recarregar(){await carregar();}
 function exportar(){const blob=new Blob([JSON.stringify(empresas,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='empresas-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click();}
 
@@ -511,6 +544,7 @@ const e=empCalc();popularCamposDaEmpresa(e);
 });
 document.getElementById('calcRegime')?.addEventListener('change',syncRegimeFields);
 document.getElementById('fRegime')?.addEventListener('change',function(){document.getElementById('fIBS').value=this.value==='simples'?'N':'S';});
+document.getElementById('fCnpj')?.addEventListener('blur',function(){if(soNumeros(this.value).length===14)consultarCNPJCadastro();});
 
 carregar();
 syncRegimeFields();

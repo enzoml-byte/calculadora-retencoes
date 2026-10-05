@@ -9,7 +9,7 @@ import { Building2, Lock, User, Eye, EyeOff } from 'lucide-react'
 export default function LoginPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const callbackUrl = searchParams.get('callback') || '/calculadora'
+  const callbackUrl = searchParams.get('callback') || '/fiscal/calculadora'
 
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')

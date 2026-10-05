@@ -3,9 +3,11 @@
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { Button, Input, Select, Card, CardContent, CardHeader, CardTitle, Badge, Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui'
-import { FileText, Building2, Plus, Edit, Trash2, Search, Loader2, Download, Upload } from 'lucide-react'
+import { FileText, Building2, Plus, Edit, Trash2, Search, Loader2, Download, Upload, X } from 'lucide-react'
 import { formatCurrency, parseBR } from '@/lib/calculations'
 import { empresaCreateSchema } from '@/lib/validators'
+import { CnpjField } from '@/components/cnpj/CnpjField'
+import type { CNPJData } from '@/lib/cnpj'
 
 type Empresa = {
   id: string
@@ -28,6 +30,7 @@ export default function EmpresasPage() {
   const [editingEmpresa, setEditingEmpresa] = useState<Empresa | null>(null)
   const [formData, setFormData] = useState({
     razaoSocial: '',
+    nomeFantasia: '',
     cnpj: '',
     regime: 'PRESUMIDO_GERAL',
     anexo: 'III',
@@ -35,6 +38,7 @@ export default function EmpresasPage() {
     issRetido: 'SEMPRE',
     informaIbsCbs: true,
   })
+  const [cnpjInfo, setCnpjInfo] = useState<CNPJData | null>(null)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [submitLoading, setSubmitLoading] = useState(false)
 
@@ -120,8 +124,10 @@ export default function EmpresasPage() {
 
   const openEdit = (empresa: Empresa) => {
     setEditingEmpresa(empresa)
+    setCnpjInfo(null)
     setFormData({
       razaoSocial: empresa.razaoSocial,
+      nomeFantasia: empresa.nomeFantasia || '',
       cnpj: empresa.cnpj,
       regime: empresa.regime,
       anexo: empresa.anexo || 'III',
@@ -134,8 +140,10 @@ export default function EmpresasPage() {
 
   const openNew = () => {
     setEditingEmpresa(null)
+    setCnpjInfo(null)
     setFormData({
       razaoSocial: '',
+      nomeFantasia: '',
       cnpj: '',
       regime: 'PRESUMIDO_GERAL',
       anexo: 'III',
@@ -150,8 +158,10 @@ export default function EmpresasPage() {
     setShowModal(false)
     setEditingEmpresa(null)
     setErrors({})
+    setCnpjInfo(null)
     setFormData({
       razaoSocial: '',
+      nomeFantasia: '',
       cnpj: '',
       regime: 'PRESUMIDO_GERAL',
       anexo: 'III',
@@ -159,6 +169,17 @@ export default function EmpresasPage() {
       issRetido: 'SEMPRE',
       informaIbsCbs: true,
     })
+  }
+
+  const handleCnpjFound = (data: CNPJData) => {
+    setCnpjInfo(data)
+    setFormData(prev => ({
+      ...prev,
+      cnpj: data.cnpj.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5'),
+      razaoSocial: data.razaoSocial || prev.razaoSocial,
+      nomeFantasia: data.nomeFantasia || prev.nomeFantasia,
+      anexo: data.anexoSugerido || prev.anexo,
+    }))
   }
 
   const regimeLabels = {
@@ -274,6 +295,99 @@ export default function EmpresasPage() {
           )}
         </CardContent>
       </Card>
+
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true">
+          <div className="w-full max-w-lg bg-white rounded-xl shadow-xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h2 className="text-lg font-bold">{editingEmpresa ? 'Editar Empresa' : 'Nova Empresa'}</h2>
+              <Button variant="ghost" size="sm" onClick={closeModal} aria-label="Fechar">
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <form onSubmit={handleSubmit} className="p-4 space-y-4">
+              <CnpjField
+                value={formData.cnpj}
+                onChange={v => setFormData(prev => ({ ...prev, cnpj: v }))}
+                onFound={handleCnpjFound}
+                error={errors.cnpj}
+                disabled={submitLoading}
+              />
+              <Input
+                label="Razão Social *"
+                value={formData.razaoSocial}
+                onChange={e => setFormData(prev => ({ ...prev, razaoSocial: e.target.value }))}
+                error={errors.razaoSocial}
+                placeholder="Preenchida automaticamente pela Receita"
+                disabled={submitLoading}
+              />
+              <Input
+                label="Nome Fantasia"
+                value={formData.nomeFantasia}
+                onChange={e => setFormData(prev => ({ ...prev, nomeFantasia: e.target.value }))}
+                placeholder="Preenchido automaticamente (editável)"
+                disabled={submitLoading}
+              />
+              {cnpjInfo && (
+                <div className="text-xs bg-slate-50 border rounded-lg p-2 space-y-1">
+                  <p><span className="font-medium">Situação:</span> {cnpjInfo.situacaoCadastral || '—'}{cnpjInfo.municipio ? ` • ${cnpjInfo.municipio}/${cnpjInfo.uf}` : ''}</p>
+                  <p><span className="font-medium">CNAE:</span> {cnpjInfo.cnaeFiscal || '—'} — {cnpjInfo.cnaeFiscalDescricao || '—'}</p>
+                  {cnpjInfo.opcaoPeloSimples && <p className="text-green-700 font-medium">Optante pelo Simples segundo a Receita.</p>}
+                </div>
+              )}
+              <div className="grid grid-cols-2 gap-3">
+                <Select
+                  label="Regime"
+                  value={formData.regime}
+                  onChange={e => setFormData(prev => ({ ...prev, regime: e.target.value }))}
+                  options={[
+                    { value: 'SIMPLES', label: 'Simples Nacional' },
+                    { value: 'PRESUMIDO_GERAL', label: 'Lucro Presumido Geral' },
+                    { value: 'PRESUMIDO_HOSPITALAR', label: 'Lucro Presumido Hospitalar' },
+                  ]}
+                />
+                <Select
+                  label="Anexo"
+                  value={formData.anexo}
+                  onChange={e => setFormData(prev => ({ ...prev, anexo: e.target.value }))}
+                  options={[
+                    { value: 'III', label: 'Anexo III' },
+                    { value: 'IV', label: 'Anexo IV' },
+                    { value: 'V', label: 'Anexo V' },
+                  ]}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <Input
+                  label="RBT12 (R$)"
+                  value={formData.rbt12}
+                  onChange={e => setFormData(prev => ({ ...prev, rbt12: e.target.value }))}
+                  placeholder="Ex: 250.000,00"
+                  disabled={submitLoading}
+                />
+                <Select
+                  label="ISS retido?"
+                  value={formData.issRetido}
+                  onChange={e => setFormData(prev => ({ ...prev, issRetido: e.target.value }))}
+                  options={[
+                    { value: 'SEMPRE', label: 'Sempre retido' },
+                    { value: 'NUNCA', label: 'Nunca retido' },
+                    { value: 'PERGUNTAR', label: 'Perguntar a cada NF' },
+                  ]}
+                />
+              </div>
+              <div className="flex gap-2 pt-2">
+                <Button type="button" variant="outline" onClick={closeModal} className="flex-1" disabled={submitLoading}>
+                  Cancelar
+                </Button>
+                <Button type="submit" className="flex-1" loading={submitLoading}>
+                  {editingEmpresa ? 'Salvar' : 'Cadastrar'}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

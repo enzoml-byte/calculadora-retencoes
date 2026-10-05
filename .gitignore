@@ -6,3 +6,6 @@ build/
 *.sqlite-journal
 .env
 uploads/
+
+.vercel
+.env*

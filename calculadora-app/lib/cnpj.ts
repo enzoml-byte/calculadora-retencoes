@@ -17,6 +17,8 @@ export interface CNPJData {
   dataAbertura: string
   naturezaJuridica: string
   capitalSocial: string
+  opcaoPeloSimples: boolean
+  porte: string
   anexoSugerido?: 'III' | 'IV' | 'V'
   avisarNaoServico: boolean
 }
@@ -46,8 +48,9 @@ const ANEXO_V_CNAES = [
   '8710', '8720', '8730', '8790', '8810', '8890',
 ]
 
-function identifyAnexoByCNAE(cnae: string): 'III' | 'IV' | 'V' | undefined {
-  const prefix = cnae.substring(0, 4)
+function identifyAnexoByCNAE(cnae: string | number): 'III' | 'IV' | 'V' | undefined {
+  const prefix = String(cnae ?? '').replace(/\D/g, '').substring(0, 4)
+  if (!prefix) return undefined
   
   if (ANEXO_IV_CNAES.includes(prefix)) return 'IV'
   if (ANEXO_V_CNAES.includes(prefix)) return 'V'
@@ -104,27 +107,32 @@ export async function lookupCNPJ(cnpj: string): Promise<CNPJData> {
     }
   }
 
-  const cnae = data.cnae_fiscal || ''
+  const cnae = String(data.cnae_fiscal ?? '')
   const anexoSugerido = identifyAnexoByCNAE(cnae)
   const avisarNaoServico = !anexoSugerido
+  const situacao = data.descricao_situacao_cadastral || data.situacao_cadastral || ''
 
   const result: CNPJData = {
     cnpj: clean,
     razaoSocial: data.razao_social || '',
     nomeFantasia: data.nome_fantasia || '',
-    logradouro: data.logradouro || '',
-    numero: data.numero || '',
+    logradouro: data.descricao_tipo_de_logradouro
+      ? `${data.descricao_tipo_de_logradouro} ${data.logradouro || ''}`.trim()
+      : (data.logradouro || ''),
+    numero: String(data.numero ?? ''),
     complemento: data.complemento || '',
     bairro: data.bairro || '',
     municipio: data.municipio || '',
     uf: data.uf || '',
-    cep: data.cep?.replace(/\D/g, '') || '',
+    cep: String(data.cep ?? '').replace(/\D/g, '') || '',
     cnaeFiscal: cnae,
     cnaeFiscalDescricao: data.cnae_fiscal_descricao || '',
-    situacaoCadastral: data.situacao_cadastral || '',
+    situacaoCadastral: String(situacao),
     dataAbertura: data.data_inicio_atividade || '',
     naturezaJuridica: data.natureza_juridica || '',
-    capitalSocial: data.capital_social || '',
+    capitalSocial: String(data.capital_social ?? ''),
+    opcaoPeloSimples: Boolean(data.opcao_pelo_simples),
+    porte: data.porte || '',
     anexoSugerido,
     avisarNaoServico,
   }

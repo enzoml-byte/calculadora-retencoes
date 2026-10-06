@@ -28,6 +28,10 @@ declare module '@auth/core/jwt' {
 }
 
 export const authConfig: NextAuthConfig = {
+  // AUTH_SECRET tem precedência; NEXTAUTH_SECRET mantido por compatibilidade
+  secret: process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET,
+  // Atrás do proxy da Vercel sem isso a sessão/JWT falha e auth() retorna null
+  trustHost: true,
   adapter: PrismaAdapter(prisma),
   session: { strategy: 'jwt' },
   pages: {

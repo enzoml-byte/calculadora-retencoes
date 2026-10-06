@@ -25,15 +25,16 @@ function getClientIP(request: NextRequest): string {
   return realIP || forwarded?.split(',')[0]?.trim() || 'unknown'
 }
 
-export default async function middleware(request: NextRequest) {
+export default auth(async function middleware(request) {
   const startTime = Date.now()
   const ip = getClientIP(request)
   const userAgent = request.headers.get('user-agent') || ''
   const path = request.nextUrl.pathname
   const method = request.method
 
-  // Rate limiting
-  const session = await auth()
+  // Rate limiting (usa a sessão já resolvida pelo wrapper auth(); o callback
+  // `authorized` em lib/auth.ts protege /fiscal/*, /contabil/* e /dashboard/*)
+  const session = request.auth
   const isAuthenticated = !!session?.user
   const userId = session?.user?.id
   const rateKey = isAuthenticated && userId ? `rate:user:${userId}` : `rate:ip:${ip}`
@@ -107,4 +108,4 @@ export default async function middleware(request: NextRequest) {
   }).catch(() => {})
 
   return response
-}
+})
